@@ -1,5 +1,5 @@
 # ETS2.Brake
-A OMSI alike brake system for ETS.
+A OMSI-like brake system for ETS.
 
 # Installation
 * [First you'll need to install vJoystick](http://vjoystick.sourceforge.net/site/index.php/download-a-install/download).
