@@ -62,7 +62,17 @@ namespace Capture.Interface
 
         #region Still image Capture
 
-        public void SetText(string fps) => TextElement.Text = fps;
+        public void SetText(string fps)
+        {
+            try
+            {
+                TextElement.Text = fps;
+            }
+            catch
+            {
+                Message(MessageType.Error, "Failed to set DirectX text");
+            }
+        }
 
         #endregion
 
