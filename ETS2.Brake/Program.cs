@@ -111,7 +111,35 @@ namespace ETS2.Brake
 
 
             while (true)
-            while (System.Console.KeyAvailable) System.Console.ReadKey(true);
+            {
+                var process = Process.GetProcesses().Where(p => p.ProcessName == "eurotrucks2").ToList();
+
+                var item = process.Any() ? process.First() : null;
+                if (item != null && !IsRunning)
+                {
+                    if (item.MainWindowHandle == IntPtr.Zero)
+                        continue;
+
+                    if (HookManager.IsHooked(item.Id))
+                        continue;
+
+                    try
+                    {
+                        AttachProcess("eurotrucks2");
+                    }
+                    catch
+                    {
+                        AttachProcess("eurotrucks2");
+                    }
+                    IsRunning = true;
+                }
+
+                if (item == null && IsRunning)
+                {
+                    IsRunning = false;
+                    ResetJoystick();
+                }
+            }
         }
 
         private static void AttachProcess(string processname)
