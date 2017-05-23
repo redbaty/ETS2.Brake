@@ -1,6 +1,6 @@
-﻿namespace ETS2.Brake
+﻿namespace ETS2.Brake.Enum
 {
-    static partial class ConsoleManager
+    internal static partial class ConsoleManager
     {
         internal enum CtrlType
         {

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Input;
-using GlobalHotKey;
+using ETS2.Brake.Utils;
 
-namespace ETS2.Brake
+namespace ETS2.Brake.Managers
 {
     public static class HotKeyManager
     {
@@ -13,7 +11,7 @@ namespace ETS2.Brake
 
         static HotKeyManager()
         {
-            Thread t = new Thread(() =>
+            var t = new Thread(() =>
             {
                 _wnd = new MessageWindow();
                 Application.Run(_wnd);
@@ -34,11 +32,23 @@ namespace ETS2.Brake
                 throw new Exception("Please use the event loaded");
         }
 
-        class MessageWindow : Form
+        private static void OnHotKeyPressedUp(KeyEventArgs e)
         {
-            public GlobalKeyboardHook GlobalKeyboardHook { get; }
+            HotKeyPressedUp?.Invoke(null, e);
+        }
 
+        private static void OnLoaded()
+        {
+            Loaded?.Invoke(null, EventArgs.Empty);
+        }
 
+        private static void OnHotKeyPressedDown(KeyEventArgs e)
+        {
+            HotKeyPressedDown?.Invoke(null, e);
+        }
+
+        private class MessageWindow : Form
+        {
             public MessageWindow()
             {
                 GlobalKeyboardHook = new GlobalKeyboardHook();
@@ -48,6 +58,8 @@ namespace ETS2.Brake
                 GlobalKeyboardHook.KeyDown += GlobalKeyboardHookOnKeyDown;
                 OnLoaded();
             }
+
+            public GlobalKeyboardHook GlobalKeyboardHook { get; }
 
 
             private void GlobalKeyboardHookOnKeyDown(object sender, KeyEventArgs keyEventArgs)
@@ -64,21 +76,6 @@ namespace ETS2.Brake
             {
                 base.SetVisibleCore(false);
             }
-        }
-
-        private static void OnHotKeyPressedUp(KeyEventArgs e)
-        {
-            HotKeyPressedUp?.Invoke(null, e);
-        }
-
-        private static void OnLoaded()
-        {
-            Loaded?.Invoke(null, EventArgs.Empty);
-        }
-
-        private static void OnHotKeyPressedDown(KeyEventArgs e)
-        {
-            HotKeyPressedDown?.Invoke(null, e);
         }
     }
 }

@@ -1,10 +1,11 @@
-﻿using vJoyInterfaceWrap;
+﻿using ETS2.Brake.Utils;
+using vJoyInterfaceWrap;
 
-namespace ETS2.Brake
+namespace ETS2.Brake.Managers
 {
-    class JoystickManager
+    internal static class JoystickManager
     {
-        private static uint Id = 1;
+        private static readonly uint Id = 1;
         public static vJoy Joystick { get; } = new vJoy();
 
         public static vJoy.JoystickState JoystickReport { get; } = new vJoy.JoystickState();

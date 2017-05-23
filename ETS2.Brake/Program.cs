@@ -6,17 +6,23 @@ using System.Windows.Forms;
 using Capture;
 using Capture.Hook;
 using Capture.Interface;
+using ETS2.Brake.Managers;
+using ETS2.Brake.Utils;
+using Console = Colorful.Console;
+using Math = ETS2.Brake.Utils.Math;
 
 namespace ETS2.Brake
 {
-    static class Program
+    internal static class Program
     {
-        public static int MaxValue => (int) _maxValue;
+        private const uint Id = 1;
+        private const int MaximumBreakAmount = 5;
 
-        private static uint Id = 1;
         private static long _maxValue;
+        private static int _currentBreakAmount;
+        private static CaptureProcess _captureProcess;
 
-        private static int ByPercentage(int percentage) => Math.ByPercentage(percentage, MaxValue);
+        private static int MaxValue => (int) _maxValue;
 
         private static int CurrentBreakAmount
         {
@@ -29,8 +35,7 @@ namespace ETS2.Brake
                     HID_USAGES.HID_USAGE_X);
                 Report.Info($"Break amount set to {value}/{MaximumBreakAmount}");
 
-                //█
-                var progressValue = Math.ByPercentage(((decimal) value / MaximumBreakAmount * 100), 10);
+                var progressValue = Math.ByPercentage((decimal) value / MaximumBreakAmount * 100, 10);
                 var progressString = "";
 
                 for (var i = 0; i < progressValue; i++)
@@ -39,23 +44,23 @@ namespace ETS2.Brake
                 if (progressString.Length < 10)
                 {
                     var delta = 10 - progressString.Length;
-                    for (int i = 0; i < delta; i++)
-                    {
+                    for (var i = 0; i < delta; i++)
                         progressString += "░";
-                    }
                 }
 
                 _captureProcess.CaptureInterface.SetText($"{progressString} {progressValue * 10}%");
             }
         }
 
-        private static int MaximumBreakAmount = 5;
-        private static int _currentBreakAmount;
+        private static int ByPercentage(int percentage)
+        {
+            return Math.ByPercentage(percentage, MaxValue);
+        }
 
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            Colorful.Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
+            Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
 
             if (!JoystickManager.ValidateAndStart())
                 return;
@@ -78,14 +83,8 @@ namespace ETS2.Brake
 
 
             while (true)
-            {
-                while (Console.KeyAvailable) Console.ReadKey(true);
-            }
+            while (System.Console.KeyAvailable) System.Console.ReadKey(true);
         }
-
-        static int processId = 0;
-        static Process _process;
-        static CaptureProcess _captureProcess;
 
         private static void AttachProcess(string processname)
         {
@@ -94,19 +93,11 @@ namespace ETS2.Brake
             var processes = Process.GetProcessesByName(exeName);
             foreach (var process in processes)
             {
-                // Simply attach to the first one found.
-
-                // If the process doesn't have a mainwindowhandle yet, skip it (we need to be able to get the hwnd to set foreground etc)
                 if (process.MainWindowHandle == IntPtr.Zero)
-                {
                     continue;
-                }
-
-                // Skip if the process is already hooked (and we want to hook multiple applications)
+                
                 if (HookManager.IsHooked(process.Id))
-                {
                     continue;
-                }
 
                 const Direct3DVersion direct3DVersion = Direct3DVersion.AutoDetect;
                 var cc = new CaptureConfig
@@ -115,26 +106,17 @@ namespace ETS2.Brake
                     ShowOverlay = true
                 };
 
-                processId = process.Id;
-                _process = process;
-
                 var captureInterface = new CaptureInterface();
                 captureInterface.RemoteMessage += CaptureInterface_RemoteMessage;
                 _captureProcess = new CaptureProcess(process, cc, captureInterface);
-     
+
                 break;
             }
 
             if (_captureProcess == null)
-            {
                 Report.Error("Could not find euro truck process. Hook is offline");
-            }
             else
-            {
                 Report.Success("Hook is online");
-
-          
-            }
         }
 
         private static void CaptureInterface_RemoteMessage(MessageReceivedEventArgs message)
@@ -157,16 +139,15 @@ namespace ETS2.Brake
         private static void HotKeyManagerOnHotKeyPressedUp(object sender, KeyEventArgs hotKeyEventArgs)
         {
             if (WindowsUtils.GetActiveWindowTitle() == "Euro Truck Simulator 2")
-            {
-                // ReSharper disable once ConvertIfStatementToSwitchStatement
                 if (hotKeyEventArgs.KeyCode == Keys.S)
                 {
                     if (CurrentBreakAmount < MaximumBreakAmount)
                         CurrentBreakAmount++;
                 }
                 else if (hotKeyEventArgs.KeyCode == Keys.W && CurrentBreakAmount > 0)
+                {
                     CurrentBreakAmount = 0;
-            }
+                }
         }
     }
 }
