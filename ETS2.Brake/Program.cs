@@ -20,6 +20,7 @@ namespace ETS2.Brake
 
         private static long _maxValue;
         private static int _currentBreakAmount;
+        private static readonly Settings Settings = new Settings();
         private static CaptureProcess _captureProcess;
 
         private static int MaxValue => (int) _maxValue;
@@ -29,11 +30,15 @@ namespace ETS2.Brake
             get => _currentBreakAmount;
             set
             {
+                if (value > Settings.MaximumBreakAmount)
+                    value = Settings.MaximumBreakAmount;
+
                 _currentBreakAmount = value;
+                var percentageValue = ((decimal) value / Settings.MaximumBreakAmount) * 100;
                 JoystickManager.Joystick.SetAxis(
-                    ByPercentage((int) ((decimal) value / MaximumBreakAmount * 100)), Id,
+                    ByPercentage((int) percentageValue), Id,
                     HID_USAGES.HID_USAGE_X);
-                Report.Info($"Break amount set to {value}/{MaximumBreakAmount}");
+                Report.Info($"Break amount set to {value}/{Settings.MaximumBreakAmount}");
 
                 var progressValue = Math.ByPercentage((decimal) value / MaximumBreakAmount * 100, 10);
                 var progressString = "";
@@ -61,6 +66,28 @@ namespace ETS2.Brake
         private static void Main(string[] args)
         {
             Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
+
+            if (!Settings.Load("config.json"))
+            {
+                Report.Info("Do you wish to generate a configuration file (config.json)?");
+
+                while (true)
+                {
+                    var response = Console.ReadLine().ToLower();
+                    if (response == "y" || response == "yes")
+                    {
+                        Settings.Save("config.json");
+                        break;
+                    }
+                    if (response == "n" || response == "n")
+                    {
+                        Report.Error("Failed loading the configuration file. Using default instead (5)");
+                        break;
+                    }
+
+                    Report.Error("Sorry, type (y)es/(n)o only");
+                }
+            }
 
             if (!JoystickManager.ValidateAndStart())
                 return;
@@ -143,6 +170,7 @@ namespace ETS2.Brake
                 {
                     if (CurrentBreakAmount < MaximumBreakAmount)
                         CurrentBreakAmount++;
+                    if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
                 }
                 else if (hotKeyEventArgs.KeyCode == Keys.W && CurrentBreakAmount > 0)
                 {
