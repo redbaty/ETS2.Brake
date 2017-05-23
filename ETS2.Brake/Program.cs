@@ -109,6 +109,7 @@ namespace ETS2.Brake
             ConsoleManager.ConsoleClosing += ConsoleManagerOnConsoleClosing;
             AttachProcess("eurotrucks2");
 
+            UpdateManager.CheckForUpdates();
 
             while (true)
             {
