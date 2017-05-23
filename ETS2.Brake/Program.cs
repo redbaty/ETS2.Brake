@@ -9,7 +9,7 @@ using Capture.Interface;
 
 namespace ETS2.Brake
 {
-    class Program
+    static class Program
     {
         public static int MaxValue => (int) _maxValue;
 
@@ -33,10 +33,8 @@ namespace ETS2.Brake
                 var progressValue = Math.ByPercentage(((decimal) value / MaximumBreakAmount * 100), 10);
                 var progressString = "";
 
-                for (int i = 0; i < progressValue; i++)
-                {
+                for (var i = 0; i < progressValue; i++)
                     progressString += "█";
-                }
 
                 if (progressString.Length < 10)
                 {
@@ -47,7 +45,7 @@ namespace ETS2.Brake
                     }
                 }
 
-                _captureProcess.CaptureInterface.SetFps($"{progressString} {progressValue * 10}%");
+                _captureProcess.CaptureInterface.SetText($"{progressString} {progressValue * 10}%");
             }
         }
 

@@ -62,11 +62,7 @@ namespace Capture.Interface
 
         #region Still image Capture
 
-        public void SetFps(string fps)
-        {
-            Message(MessageType.Debug, $"Set {TextElement.Text}");
-            TextElement.Text = fps;
-        }
+        public void SetText(string fps) => TextElement.Text = fps;
 
         #endregion
 
