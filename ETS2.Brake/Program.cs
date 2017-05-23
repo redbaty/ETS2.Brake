@@ -24,6 +24,7 @@ namespace ETS2.Brake
         private static CaptureProcess _captureProcess;
 
         private static int MaxValue => (int) _maxValue;
+        private static int _increaseRatio = 1;
 
         private static int CurrentBreakAmount
         {
@@ -168,13 +169,23 @@ namespace ETS2.Brake
             if (WindowsUtils.GetActiveWindowTitle() == "Euro Truck Simulator 2")
                 if (hotKeyEventArgs.KeyCode == Keys.S)
                 {
-                    if (CurrentBreakAmount < MaximumBreakAmount)
-                        CurrentBreakAmount++;
+                    _resetToken.Cancel();
+                    _resetToken = new CancellationTokenSource();
+
                     if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
+
+                    CurrentBreakAmount += _increaseRatio;
+
+                    Task.Factory.StartNew(() =>
+                    {
+                        Thread.Sleep(1000);
+                        _increaseRatio = 1;
+                    }, _resetToken.Token);
                 }
                 else if (hotKeyEventArgs.KeyCode == Keys.W && CurrentBreakAmount > 0)
                 {
                     CurrentBreakAmount = 0;
+                    _increaseRatio = 1;
                 }
         }
     }
