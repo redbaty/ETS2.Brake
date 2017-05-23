@@ -2,6 +2,9 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Capture;
 using Capture.Hook;
@@ -16,14 +19,15 @@ namespace ETS2.Brake
     internal static class Program
     {
         private const uint Id = 1;
-        private const int MaximumBreakAmount = 5;
+
+        private static bool IsRunning { get; set; }
+
+        private static readonly Settings Settings = new Settings();
+        private static CancellationTokenSource _resetToken = new CancellationTokenSource();
+        private static CaptureProcess _captureProcess;
 
         private static long _maxValue;
         private static int _currentBreakAmount;
-        private static readonly Settings Settings = new Settings();
-        private static CaptureProcess _captureProcess;
-
-        private static int MaxValue => (int) _maxValue;
         private static int _increaseRatio = 1;
 
         private static int CurrentBreakAmount
@@ -41,7 +45,7 @@ namespace ETS2.Brake
                     HID_USAGES.HID_USAGE_X);
                 Report.Info($"Break amount set to {value}/{Settings.MaximumBreakAmount}");
 
-                var progressValue = Math.ByPercentage((decimal) value / MaximumBreakAmount * 100, 10);
+                var progressValue = Math.ByPercentage(percentageValue, 10);
                 var progressString = "";
 
                 for (var i = 0; i < progressValue; i++)
@@ -54,17 +58,19 @@ namespace ETS2.Brake
                         progressString += "░";
                 }
 
-                _captureProcess.CaptureInterface.SetText($"{progressString} {progressValue * 10}%");
+                _increaseRatio++;
+
+                _captureProcess?.CaptureInterface.SetText($"{progressString} {percentageValue}%");
             }
         }
 
         private static int ByPercentage(int percentage)
         {
-            return Math.ByPercentage(percentage, MaxValue);
+            return Math.ByPercentage(percentage, _maxValue);
         }
 
         [STAThread]
-        private static void Main(string[] args)
+        private static void Main()
         {
             Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
 
@@ -107,8 +113,6 @@ namespace ETS2.Brake
 
             ConsoleManager.Enable();
             ConsoleManager.ConsoleClosing += ConsoleManagerOnConsoleClosing;
-            AttachProcess("eurotrucks2");
-
             UpdateManager.CheckForUpdates();
 
             while (true)
@@ -152,7 +156,7 @@ namespace ETS2.Brake
             {
                 if (process.MainWindowHandle == IntPtr.Zero)
                     continue;
-                
+
                 if (HookManager.IsHooked(process.Id))
                     continue;
 
@@ -166,7 +170,7 @@ namespace ETS2.Brake
                 var captureInterface = new CaptureInterface();
                 captureInterface.RemoteMessage += CaptureInterface_RemoteMessage;
                 _captureProcess = new CaptureProcess(process, cc, captureInterface);
-
+                _captureProcess.CaptureInterface.SetText($"ETS.Brake loaded");
                 break;
             }
 
