@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using Newtonsoft.Json;
 
@@ -6,7 +7,16 @@ namespace ETS2.Brake
 {
     public class Settings
     {
-        public int MaximumBreakAmount { get; set; } = 5;
+        public int MaximumBreakAmount { get; set; } = 20;
+
+        [JsonIgnore]
+        public decimal CurrentIncreaseRatio { get; set; }
+
+        public int IncreaseRatio { get; set; } = 1;
+
+        public bool IsIncreaseRatioEnabled { get; set; } = true;
+
+        public TimeSpan ResetIncreaseRatioTimeSpan { get; set; } = new TimeSpan(0, 0, 0, 0, 500);
 
         public bool Save(string path)
         {
