@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Runtime.InteropServices;
-
-namespace Capture.Hook
+﻿namespace Overlay.Hook
 {
     /// <summary>
     /// The full list of IDirect3DDevice9 functions with the correct index

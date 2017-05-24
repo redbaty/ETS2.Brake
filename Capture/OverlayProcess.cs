@@ -1,23 +1,22 @@
 ﻿using System;
-using EasyHook;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels.Ipc;
-using Capture.Interface;
 using System.Diagnostics;
+using System.Runtime.Remoting;
 using System.Threading;
-using Capture.Hook;
+using EasyHook;
+using Overlay.Hook;
+using Overlay.Interface;
 
-namespace Capture
+namespace Overlay
 {
-    public class CaptureProcess : IDisposable
+    public sealed class OverlayProcess : IDisposable
     {
         /// <summary>
         /// Must be null to allow a random channel name to be generated
         /// </summary>
-        string _channelName = null;
-        private IpcServerChannel _screenshotServer;
-        private CaptureInterface _serverInterface;
-        public Process Process { get; set; }
+        private readonly string _channelName;
+        private readonly OverlayInterface _serverInterface;
+
+        private Process Process { get; set; }
 
         /// <summary>
         /// Prepares capturing in the target process. Note that the process must not already be hooked, and must have a <see cref="Process.MainWindowHandle"/>.
@@ -27,7 +26,7 @@ namespace Capture
         /// <exception cref="ProcessAlreadyHookedException">Thrown if the <paramref name="process"/> is already hooked</exception>
         /// <exception cref="InjectionFailedException">Thrown if the injection failed - see the InnerException for more details.</exception>
         /// <remarks>The target process will have its main window brought to the foreground after successful injection.</remarks>
-        public CaptureProcess(Process process, CaptureConfig config, CaptureInterface captureInterface)
+        public OverlayProcess(Process process, OverlayConfig config, OverlayInterface overlayInterface)
         {
             // If the process doesn't have a mainwindowhandle yet, skip it (we need to be able to get the hwnd to set foreground etc)
             if (process.MainWindowHandle == IntPtr.Zero)
@@ -41,27 +40,24 @@ namespace Capture
                 throw new ProcessAlreadyHookedException();
             }
 
-            captureInterface.ProcessId = process.Id;
-            _serverInterface = captureInterface;
-            //_serverInterface = new CaptureInterface() { ProcessId = process.Id };
+            overlayInterface.ProcessId = process.Id;
+            _serverInterface = overlayInterface;
+            //_serverInterface = new OverlayInterface() { ProcessId = process.Id };
 
             // Initialise the IPC server (with our instance of _serverInterface)
-            _screenshotServer = RemoteHooking.IpcCreateServer<CaptureInterface>(
+            RemoteHooking.IpcCreateServer(
                 ref _channelName,
                 WellKnownObjectMode.Singleton,
                 _serverInterface);
 
             try
             {
-
-                // Inject DLL into target process
                 RemoteHooking.Inject(
                     process.Id,
                     InjectionOptions.Default,
-                    typeof(CaptureInterface).Assembly.Location,//"Capture.dll", // 32-bit version (the same because AnyCPU) could use different assembly that links to 32-bit C++ helper dll
-                    typeof(CaptureInterface).Assembly.Location, //"Capture.dll", // 64-bit version (the same because AnyCPU) could use different assembly that links to 64-bit C++ helper dll
-                    // the optional parameter list...
-                    _channelName, // The name of the IPC channel for the injected assembly to connect to
+                    typeof(OverlayInterface).Assembly.Location,
+                    typeof(OverlayInterface).Assembly.Location,
+                    _channelName,
                     config
                 );
             }
@@ -83,9 +79,9 @@ namespace Capture
             BringProcessWindowToFront();
         }
 
-        public CaptureInterface CaptureInterface => _serverInterface;
+        public OverlayInterface OverlayInterface => _serverInterface;
 
-        ~CaptureProcess()
+        ~OverlayProcess()
         {
             Dispose(false);
         }
@@ -99,10 +95,10 @@ namespace Capture
         /// <remarks>If the window does not come to the front within approx. 30 seconds an exception is raised</remarks>
         public void BringProcessWindowToFront()
         {
-            if (this.Process == null)
+            if (Process == null)
                 return;
-            IntPtr handle = this.Process.MainWindowHandle;
-            int i = 0;
+            var handle = Process.MainWindowHandle;
+            var i = 0;
 
             while (!NativeMethods.IsWindowInForeground(handle))
             {
@@ -145,14 +141,14 @@ namespace Capture
 
         #region IDispose
 
-        private bool _disposed = false;
+        private bool _disposed;
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (!_disposed)
             {

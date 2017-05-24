@@ -1,19 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Capture.Interface;
+using Overlay.Interface;
 
-namespace Capture.Hook
+namespace Overlay.Hook
 {
     public interface IDXHook: IDisposable
     {
-        CaptureInterface Interface
+        OverlayInterface Interface
         {
             get;
             set;
         }
-        CaptureConfig Config
+        OverlayConfig Config
         {
             get;
             set;

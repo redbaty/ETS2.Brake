@@ -7,29 +7,29 @@ using System.Runtime.Remoting.Channels.Ipc;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
 using System.Threading.Tasks;
-using Capture.Hook;
-using Capture.Interface;
 using EasyHook;
+using Overlay.Hook;
+using Overlay.Interface;
 
-namespace Capture
+namespace Overlay
 {
     public class EntryPoint : IEntryPoint
     {
-        List<IDXHook> _directXHooks = new List<IDXHook>();
-        public IDXHook _directXHook;
-        private CaptureInterface _interface;
+        readonly List<IDXHook> _directXHooks = new List<IDXHook>();
+        private IDXHook _directXHook;
+        private readonly OverlayInterface _interface;
         private ManualResetEvent _runWait;
-        ClientCaptureInterfaceEventProxy _clientEventProxy = new ClientCaptureInterfaceEventProxy();
-        IpcServerChannel _clientServerChannel = null;
+        readonly ClientCaptureInterfaceEventProxy _clientEventProxy = new ClientCaptureInterfaceEventProxy();
+        readonly IpcServerChannel _clientServerChannel = null;
 
         public EntryPoint(
             RemoteHooking.IContext context,
             String channelName,
-            CaptureConfig config)
+            OverlayConfig config)
         {
             // Get reference to IPC to host application
             // Note: any methods called or events triggered against _interface will execute in the host process.
-            _interface = RemoteHooking.IpcConnectClient<CaptureInterface>(channelName);
+            _interface = RemoteHooking.IpcConnectClient<OverlayInterface>(channelName);
 
             // We try to ping immediately, if it fails then injection fails
             _interface.Ping();
@@ -41,11 +41,11 @@ namespace Capture
             properties["name"] = channelName;
             properties["portName"] = channelName + Guid.NewGuid().ToString("N"); // random portName so no conflict with existing channels of channelName
 
-            BinaryServerFormatterSinkProvider binaryProv = new BinaryServerFormatterSinkProvider();
+            var binaryProv = new BinaryServerFormatterSinkProvider();
             binaryProv.TypeFilterLevel = TypeFilterLevel.Full;
 
-            IpcServerChannel _clientServerChannel = new IpcServerChannel(properties, binaryProv);
-            ChannelServices.RegisterChannel(_clientServerChannel, false);
+            var clientServerChannel = new IpcServerChannel(properties, binaryProv);
+            ChannelServices.RegisterChannel(clientServerChannel, false);
             
             #endregion
         }
@@ -53,11 +53,11 @@ namespace Capture
         public void Run(
             RemoteHooking.IContext context,
             String channelName,
-            CaptureConfig config)
+            OverlayConfig config)
         {
             // When not using GAC there can be issues with remoting assemblies resolving correctly
             // this is a workaround that ensures that the current assembly is correctly associated
-            AppDomain currentDomain = AppDomain.CurrentDomain;
+            var currentDomain = AppDomain.CurrentDomain;
             currentDomain.AssemblyResolve += (sender, args) => GetType().Assembly.FullName == args.Name ? GetType().Assembly : null;
 
             // NOTE: This is running in the target process
@@ -139,38 +139,38 @@ namespace Capture
             }
         }
 
-        private bool InitialiseDirectXHook(CaptureConfig config)
+        private bool InitialiseDirectXHook(OverlayConfig config)
         {
-            Direct3DVersion version = config.Direct3DVersion;
+            var version = config.Direct3DVersion;
 
-            List<Direct3DVersion> loadedVersions = new List<Direct3DVersion>();
+            var loadedVersions = new List<Direct3DVersion>();
 
-            bool isX64Process = RemoteHooking.IsX64Process(RemoteHooking.GetCurrentProcessId());
+            var isX64Process = RemoteHooking.IsX64Process(RemoteHooking.GetCurrentProcessId());
             _interface.Message(MessageType.Information, "Remote process is a {0}-bit process.", isX64Process ? "64" : "32");
 
             try
             {
-                if (version == Direct3DVersion.AutoDetect || version == Direct3DVersion.Unknown)
+                if (version == Direct3DVersion.Unknown)
                 {
                     // Attempt to determine the correct version based on loaded module.
                     // In most cases this will work fine, however it is perfectly ok for an application to use a D3D10 device along with D3D11 devices
                     // so the version might matched might not be the one you want to use
-                    IntPtr d3D9Loaded = IntPtr.Zero;
-                    IntPtr d3D10Loaded = IntPtr.Zero;
-                    IntPtr d3D10_1Loaded = IntPtr.Zero;
-                    IntPtr d3D11Loaded = IntPtr.Zero;
-                    IntPtr d3D11_1Loaded = IntPtr.Zero;
+                    var d3D9Loaded = IntPtr.Zero;
+                    var d3D10Loaded = IntPtr.Zero;
+                    var d3D101Loaded = IntPtr.Zero;
+                    var d3D11Loaded = IntPtr.Zero;
+                    var d3D111Loaded = IntPtr.Zero;
 
-                    int delayTime = 100;
-                    int retryCount = 0;
-                    while (d3D9Loaded == IntPtr.Zero && d3D10Loaded == IntPtr.Zero && d3D10_1Loaded == IntPtr.Zero && d3D11Loaded == IntPtr.Zero && d3D11_1Loaded == IntPtr.Zero)
+                    var delayTime = 100;
+                    var retryCount = 0;
+                    while (d3D9Loaded == IntPtr.Zero && d3D10Loaded == IntPtr.Zero && d3D101Loaded == IntPtr.Zero && d3D11Loaded == IntPtr.Zero && d3D111Loaded == IntPtr.Zero)
                     {
                         retryCount++;
                         d3D9Loaded = NativeMethods.GetModuleHandle("d3d9.dll");
                         d3D10Loaded = NativeMethods.GetModuleHandle("d3d10.dll");
-                        d3D10_1Loaded = NativeMethods.GetModuleHandle("d3d10_1.dll");
+                        d3D101Loaded = NativeMethods.GetModuleHandle("d3d10_1.dll");
                         d3D11Loaded = NativeMethods.GetModuleHandle("d3d11.dll");
-                        d3D11_1Loaded = NativeMethods.GetModuleHandle("d3d11_1.dll");
+                        d3D111Loaded = NativeMethods.GetModuleHandle("d3d11_1.dll");
                         Thread.Sleep(delayTime);
 
                         if (retryCount * delayTime > 5000)
@@ -180,31 +180,7 @@ namespace Capture
                         }
                     }
 
-                    version = Direct3DVersion.Unknown;
-                    if (d3D11_1Loaded != IntPtr.Zero)
-                    {
-                        _interface.Message(MessageType.Debug, "Autodetect found Direct3D 11.1");
-                        version = Direct3DVersion.Direct3D11_1;
-                        loadedVersions.Add(version);
-                    }
-                    if (d3D11Loaded != IntPtr.Zero)
-                    {
-                        _interface.Message(MessageType.Debug, "Autodetect found Direct3D 11");
-                        version = Direct3DVersion.Direct3D11;
-                        loadedVersions.Add(version);
-                    }
-                    if (d3D10_1Loaded != IntPtr.Zero)
-                    {
-                        _interface.Message(MessageType.Debug, "Autodetect found Direct3D 10.1");
-                        version = Direct3DVersion.Direct3D10_1;
-                        loadedVersions.Add(version);
-                    }
-                    if (d3D10Loaded != IntPtr.Zero)
-                    {
-                        _interface.Message(MessageType.Debug, "Autodetect found Direct3D 10");
-                        version = Direct3DVersion.Direct3D10;
-                        loadedVersions.Add(version);
-                    }
+                    version = Direct3DVersion.Direct3D9;
                     if (d3D9Loaded != IntPtr.Zero)
                     {
                         _interface.Message(MessageType.Debug, "Autodetect found Direct3D 9");
@@ -224,20 +200,8 @@ namespace Capture
                     switch (version)
                     {
                         case Direct3DVersion.Direct3D9:
-                            _directXHook = new DXHookD3D9(_interface);
+                            _directXHook = new DxHookD3D9(_interface);
                             break;
-                        case Direct3DVersion.Direct3D10:
-                            _directXHook = new DXHookD3D10(_interface);
-                            break;
-                        case Direct3DVersion.Direct3D10_1:
-                            _directXHook = new DXHookD3D10_1(_interface);
-                            break;
-                        case Direct3DVersion.Direct3D11:
-                            _directXHook = new DXHookD3D11(_interface);
-                            break;
-                        //case Direct3DVersion.Direct3D11_1:
-                        //    _directXHook = new DXHookD3D11_1(_interface);
-                        //    return;
                         default:
                             _interface.Message(MessageType.Error, "Unsupported Direct3D version: {0}", version);
                             return false;

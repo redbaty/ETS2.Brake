@@ -1,26 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
-namespace Capture.Hook.Common
+namespace Overlay.Hook.Common
 {
-    public class Overlay: IOverlay
+    public sealed class Overlay: IOverlay
     {
-        List<IOverlayElement> _elements = new List<IOverlayElement>();
-        public virtual List<IOverlayElement> Elements
-        {
-            get => _elements;
-            set => _elements = value;
-        }
+        public List<IOverlayElement> Elements { get; set; } = new List<IOverlayElement>();
 
-        public virtual bool Hidden
+        public bool Hidden
         {
             get;
             set;
         }
 
-        public virtual void Frame()
+        public void Frame()
         {
             foreach (var element in Elements)
             {
@@ -28,7 +20,7 @@ namespace Capture.Hook.Common
             }
         }
 
-        public virtual object Clone()
+        public object Clone()
         {
             return MemberwiseClone();
         }

@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETS2.Brake", "ETS2.Brake\ETS2.Brake.csproj", "{FCDDD077-8C25-4E79-8975-E094E508E689}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Capture", "Capture\Capture.csproj", "{23178A3D-2AC0-419A-B1B6-59CA45191270}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Overlay", "Capture\Overlay.csproj", "{23178A3D-2AC0-419A-B1B6-59CA45191270}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

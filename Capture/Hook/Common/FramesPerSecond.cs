@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Capture.Hook.Common
+namespace Overlay.Hook.Common
 {
     [Serializable]
     public class FramesPerSecond: TextElement

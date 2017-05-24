@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Capture;
-using Capture.Hook;
-using Capture.Interface;
 using ETS2.Brake.Managers;
 using ETS2.Brake.Utils;
+using Overlay;
+using Overlay.Hook;
+using Overlay.Interface;
 using Console = Colorful.Console;
 using Math = ETS2.Brake.Utils.Math;
 
@@ -24,13 +25,12 @@ namespace ETS2.Brake
 
         private static readonly Settings Settings = new Settings();
         private static CancellationTokenSource _resetToken = new CancellationTokenSource();
-        private static CaptureProcess _captureProcess;
+        private static OverlayProcess _overlayProcess;
 
         private static long _maxValue;
-        private static int _currentBreakAmount;
-        private static int _increaseRatio = 1;
+        private static decimal _currentBreakAmount;
 
-        private static int CurrentBreakAmount
+        private static decimal CurrentBreakAmount
         {
             get => _currentBreakAmount;
             set
@@ -39,11 +39,10 @@ namespace ETS2.Brake
                     value = Settings.MaximumBreakAmount;
 
                 _currentBreakAmount = value;
-                var percentageValue = ((decimal) value / Settings.MaximumBreakAmount) * 100;
+                var percentageValue = (value / Settings.MaximumBreakAmount) * 100;
                 JoystickManager.Joystick.SetAxis(
                     ByPercentage((int) percentageValue), Id,
                     HID_USAGES.HID_USAGE_X);
-                Report.Info($"Break amount set to {value}/{Settings.MaximumBreakAmount}");
 
                 var progressValue = Math.ByPercentage(percentageValue, 10);
                 var progressString = "";
@@ -58,9 +57,8 @@ namespace ETS2.Brake
                         progressString += "░";
                 }
 
-                _increaseRatio++;
-
-                _captureProcess?.CaptureInterface.SetText($"{progressString} {percentageValue}%");
+                _overlayProcess?.OverlayInterface.SetText($"{progressString} {percentageValue}%");
+                Report.Info(percentageValue.ToString());
             }
         }
 
@@ -114,6 +112,7 @@ namespace ETS2.Brake
             ConsoleManager.Enable();
             ConsoleManager.ConsoleClosing += ConsoleManagerOnConsoleClosing;
             UpdateManager.CheckForUpdates();
+            Settings.Save("config.json");
 
             while (true)
             {
@@ -162,21 +161,20 @@ namespace ETS2.Brake
                 if (HookManager.IsHooked(process.Id))
                     continue;
 
-                const Direct3DVersion direct3DVersion = Direct3DVersion.AutoDetect;
-                var cc = new CaptureConfig
+                var cc = new OverlayConfig
                 {
-                    Direct3DVersion = direct3DVersion,
+                    Direct3DVersion = Direct3DVersion.Unknown,
                     ShowOverlay = true
                 };
 
-                var captureInterface = new CaptureInterface();
+                var captureInterface = new OverlayInterface();
                 captureInterface.RemoteMessage += CaptureInterface_RemoteMessage;
-                _captureProcess = new CaptureProcess(process, cc, captureInterface);
-                _captureProcess.CaptureInterface.SetText($"ETS.Brake loaded");
+                _overlayProcess = new OverlayProcess(process, cc, captureInterface);
+                _overlayProcess.OverlayInterface.SetText($"ETS.Brake loaded");
                 break;
             }
 
-            if (_captureProcess == null)
+            if (_overlayProcess == null)
                 Report.Error("Could not find euro truck process. Hook is offline");
             else
                 Report.Success("Hook is online");
@@ -202,26 +200,35 @@ namespace ETS2.Brake
         private static void HotKeyManagerOnHotKeyPressedUp(object sender, KeyEventArgs hotKeyEventArgs)
         {
             if (WindowsUtils.GetActiveWindowTitle() == "Euro Truck Simulator 2")
-                if (hotKeyEventArgs.KeyCode == Keys.S)
+            if (hotKeyEventArgs.KeyCode == Keys.S)
+            {
+                _resetToken.Cancel();
+                _resetToken = new CancellationTokenSource();
+
+                if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
+
+                if (Settings.IsIncreaseRatioEnabled)
                 {
-                    _resetToken.Cancel();
-                    _resetToken = new CancellationTokenSource();
+                    var increaseAmount = CurrentBreakAmount > 0 ? CurrentBreakAmount : 1 * Settings.IncreaseRatio;
+                    Report.Info($"D: {increaseAmount.ToString(CultureInfo.InvariantCulture)}");
+                    Settings.CurrentIncreaseRatio += increaseAmount;
+                    CurrentBreakAmount += Settings.CurrentIncreaseRatio;
+                }
+                else
+                    CurrentBreakAmount++;
 
-                    if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
-
-                    CurrentBreakAmount += _increaseRatio;
-
-                    Task.Factory.StartNew(() =>
+                Task.Factory.StartNew(() =>
                     {
-                        Thread.Sleep(1000);
-                        _increaseRatio = 1;
-                    }, _resetToken.Token);
-                }
-                else if (hotKeyEventArgs.KeyCode == Keys.W && CurrentBreakAmount > 0)
-                {
-                    CurrentBreakAmount = 0;
-                    _increaseRatio = 1;
-                }
+                        Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
+                        Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+                    },
+                    _resetToken.Token);
+            }
+            else if (hotKeyEventArgs.KeyCode == Keys.W && CurrentBreakAmount > 0)
+            {
+                CurrentBreakAmount = 0;
+                Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+            }
         }
     }
 }

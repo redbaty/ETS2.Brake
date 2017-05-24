@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
-namespace Capture.Hook
+namespace Overlay.Hook
 {
     /// <summary>
     /// Provides a safe handle around a block of unmanaged memory.
