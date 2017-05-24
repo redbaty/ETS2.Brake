@@ -144,6 +144,8 @@ namespace ETS2.Brake
                     IsRunning = false;
                     ResetJoystick();
                 }
+
+                Thread.Sleep(5000);
             }
         }
 
