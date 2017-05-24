@@ -13,13 +13,7 @@ namespace Capture.Interface
     public class Screenshot : MarshalByRefObject, IDisposable
     {
         Guid _requestId;
-        public Guid RequestId
-        {
-            get
-            {
-                return _requestId;
-            }
-        }
+        public Guid RequestId => _requestId;
 
         public ImageFormat Format { get; set; }
 
@@ -29,13 +23,7 @@ namespace Capture.Interface
         public int Width { get; set; }
 
         byte[] _data;
-        public byte[] Data
-        {
-            get
-            {
-                return _data;
-            }
-        }
+        public byte[] Data => _data;
 
         private bool _disposed;
 

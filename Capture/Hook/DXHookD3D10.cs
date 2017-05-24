@@ -143,13 +143,7 @@ namespace Capture.Hook
         Hook<DXGISwapChain_PresentDelegate> DXGISwapChain_PresentHook = null;
         Hook<DXGISwapChain_ResizeTargetDelegate> DXGISwapChain_ResizeTargetHook = null;
 
-        protected override string HookName
-        {
-            get
-            {
-                return "DXHookD3D10";
-            }
-        }
+        protected override string HookName => "DXHookD3D10";
 
         public override void Hook()
         {

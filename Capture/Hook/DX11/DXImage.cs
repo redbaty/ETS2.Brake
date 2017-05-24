@@ -17,26 +17,11 @@ namespace Capture.Hook.DX11
         int _texWidth, _texHeight;
         bool _initialised = false;
 
-        public int Width
-        {
-            get
-            {
-                return _texWidth;
-            }
-        }
+        public int Width => _texWidth;
 
-        public int Height
-        {
-            get
-            {
-                return _texHeight;
-            }
-        }
-        
-        public Device Device
-        {
-            get { return _device; }
-        }
+        public int Height => _texHeight;
+
+        public Device Device => _device;
 
         public DXImage(Device device, DeviceContext deviceContext): base("DXImage")
         {

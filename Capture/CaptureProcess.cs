@@ -6,18 +6,11 @@ using Capture.Interface;
 using System.Diagnostics;
 using System.Threading;
 using Capture.Hook;
-using Capture.Hook.DX9;
-using FramesPerSecond = Capture.Hook.Common.FramesPerSecond;
 
 namespace Capture
 {
     public class CaptureProcess : IDisposable
     {
-        public static DXHookD3D9 DX9Hook;
-        public static FramesPerSecond Dx9OverlayEngine;
-
-        public static event EventHandler DXOverlayLoaded;
-
         /// <summary>
         /// Must be null to allow a random channel name to be generated
         /// </summary>
@@ -90,10 +83,7 @@ namespace Capture
             BringProcessWindowToFront();
         }
 
-        public CaptureInterface CaptureInterface
-        {
-            get { return _serverInterface; }
-        }
+        public CaptureInterface CaptureInterface => _serverInterface;
 
         ~CaptureProcess()
         {
@@ -177,10 +167,5 @@ namespace Capture
         }
 
         #endregion
-
-        public static void OnDxOverlayLoaded()
-        {
-            DXOverlayLoaded?.Invoke(null, EventArgs.Empty);
-        }
     }
 }

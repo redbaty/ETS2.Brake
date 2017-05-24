@@ -23,7 +23,6 @@ namespace Capture.Hook
         public DXHookD3D9(CaptureInterface ssInterface)
             : base(ssInterface)
         {
-            CaptureProcess.DX9Hook = this;
         }
 
         Hook<Direct3D9Device_EndSceneDelegate> Direct3DDevice_EndSceneHook;
@@ -41,10 +40,7 @@ namespace Capture.Hook
         Surface _renderTargetCopy;
         Surface _resolvedTarget;
 
-        protected override string HookName
-        {
-            get { return "DXHookD3D9"; }
-        }
+        protected override string HookName => "DXHookD3D9";
 
         List<IntPtr> id3dDeviceFunctionAddresses = new List<IntPtr>();
 

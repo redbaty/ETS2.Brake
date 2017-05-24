@@ -71,13 +71,7 @@ namespace Capture.Hook
             }
         }
 
-        protected virtual string HookName
-        {
-            get
-            {
-                return "BaseDXHook";
-            }
-        }
+        protected virtual string HookName => "BaseDXHook";
 
         protected void Frame()
         {
@@ -282,13 +276,7 @@ namespace Capture.Hook
             set;
         }
 
-        protected bool CaptureThisFrame
-        {
-            get
-            {
-                return ((Timer.Elapsed - LastCaptureTime) > CaptureDelay) || Request != null;
-            }
-        }
+        protected bool CaptureThisFrame => ((Timer.Elapsed - LastCaptureTime) > CaptureDelay) || Request != null;
         protected TimeSpan CaptureDelay { get; set; }
 
         #region IDXHook Members
@@ -302,7 +290,7 @@ namespace Capture.Hook
         private CaptureConfig _config;
         public CaptureConfig Config
         {
-            get { return _config; }
+            get => _config;
             set
             {
                 _config = value;
@@ -313,8 +301,8 @@ namespace Capture.Hook
         private ScreenshotRequest _request;
         public ScreenshotRequest Request
         {
-            get { return _request; }
-            set { Interlocked.Exchange(ref _request, value);  }
+            get => _request;
+            set => Interlocked.Exchange(ref _request, value);
         }
 
         protected List<Hook> Hooks = new List<Hook>();

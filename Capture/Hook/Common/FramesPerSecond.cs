@@ -5,7 +5,7 @@ namespace Capture.Hook.Common
     [Serializable]
     public class FramesPerSecond: TextElement
     {
-        public static string _fpsFormat = "{0:N0} fak1 fps";
+        public static string _fpsFormat = "{0:N0} fps";
 
         public override string Text
         {

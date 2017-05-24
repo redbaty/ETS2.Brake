@@ -109,13 +109,7 @@ namespace Capture.Hook
         //ShaderResourceView _resolvedSRV;
         #endregion
 
-        protected override string HookName
-        {
-            get
-            {
-                return "DXHookD3D11";
-            }
-        }
+        protected override string HookName => "DXHookD3D11";
 
         public override void Hook()
         {

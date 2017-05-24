@@ -23,7 +23,7 @@ namespace Capture.Hook.DX9
         Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
         Dictionary<Element, Texture> _imageCache = new Dictionary<Element, Texture>();
 
-        public Device Device { get { return _device; } }
+        public Device Device => _device;
 
         public DXOverlayEngine()
         {

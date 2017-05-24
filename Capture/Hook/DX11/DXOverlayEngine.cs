@@ -12,13 +12,7 @@ namespace Capture.Hook.DX11
     internal class DXOverlayEngine: Component
     {
         public List<IOverlay> Overlays { get; set; }
-        public bool DeferredContext
-        {
-            get
-            {
-                return _deviceContext.TypeInfo == DeviceContextType.Deferred;
-            }
-        }
+        public bool DeferredContext => _deviceContext.TypeInfo == DeviceContextType.Deferred;
 
         bool _initialised = false;
         bool _initialising = false;

@@ -45,12 +45,12 @@ namespace Capture.Hook.DX11
         /// <summary>
         /// Gets the Direct3D11 device.
         /// </summary>
-        public SharpDX.Direct3D11.Device Direct3DDevice { get { return d3dDevice; } }
+        public SharpDX.Direct3D11.Device Direct3DDevice => d3dDevice;
 
         /// <summary>
         /// Gets the Direct3D11 immediate context.
         /// </summary>
-        public SharpDX.Direct3D11.DeviceContext Direct3DContext { get { return d3dContext; } }
+        public SharpDX.Direct3D11.DeviceContext Direct3DContext => d3dContext;
 
         public DeviceManager(Device device)
         {

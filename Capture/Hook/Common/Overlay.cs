@@ -10,8 +10,8 @@ namespace Capture.Hook.Common
         List<IOverlayElement> _elements = new List<IOverlayElement>();
         public virtual List<IOverlayElement> Elements
         {
-            get { return _elements; }
-            set { _elements = value; }
+            get => _elements;
+            set => _elements = value;
         }
 
         public virtual bool Hidden
