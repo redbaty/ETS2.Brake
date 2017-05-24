@@ -1,14 +1,7 @@
 ﻿using System;
-using TextElement = Capture.Hook.Common.FramesPerSecond;
 
-namespace Capture.Interface
+namespace Overlay.Interface
 {
-    [Serializable]
-    public delegate void RecordingStartedEvent(CaptureConfig config);
-
-    [Serializable]
-    public delegate void RecordingStoppedEvent();
-
     [Serializable]
     public delegate void MessageReceivedEvent(MessageReceivedEventArgs message);
 
@@ -16,13 +9,10 @@ namespace Capture.Interface
     public delegate void DisconnectedEvent();
 
     [Serializable]
-    public delegate void ScreenshotRequestedEvent(ScreenshotRequest request);
-
-    [Serializable]
     public delegate void DisplayTextEvent(DisplayTextEventArgs args);
 
     [Serializable]
-    public class CaptureInterface : MarshalByRefObject
+    public class OverlayInterface : MarshalByRefObject
     {
         /// <summary>
         /// The client process Id
@@ -85,7 +75,7 @@ namespace Capture.Interface
         }
 
         /// <summary>
-        /// Send a message to all handlers of <see cref="CaptureInterface.RemoteMessage"/>.
+        /// Send a message to all handlers of <see cref="OverlayInterface.RemoteMessage"/>.
         /// </summary>
         /// <param name="messageType"></param>
         /// <param name="format"></param>
@@ -132,9 +122,9 @@ namespace Capture.Interface
                 return; //No Listeners
 
             MessageReceivedEvent listener = null;
-            Delegate[] dels = RemoteMessage.GetInvocationList();
+            var dels = RemoteMessage.GetInvocationList();
 
-            foreach (Delegate del in dels)
+            foreach (var del in dels)
             {
                 try
                 {
@@ -157,9 +147,9 @@ namespace Capture.Interface
                 return; //No Listeners
 
             DisconnectedEvent listener = null;
-            Delegate[] dels = Disconnected.GetInvocationList();
+            var dels = Disconnected.GetInvocationList();
 
-            foreach (Delegate del in dels)
+            foreach (var del in dels)
             {
                 try
                 {
@@ -181,9 +171,9 @@ namespace Capture.Interface
                 return; //No Listeners
 
             DisplayTextEvent listener = null;
-            Delegate[] dels = DisplayText.GetInvocationList();
+            var dels = DisplayText.GetInvocationList();
 
-            foreach (Delegate del in dels)
+            foreach (var del in dels)
             {
                 try
                 {
