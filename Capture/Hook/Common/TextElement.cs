@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Drawing;
 
-namespace Capture.Hook.Common
+namespace Overlay.Hook.Common
 {
     [Serializable]
     public class TextElement: Element

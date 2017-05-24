@@ -1,33 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Runtime.InteropServices;
-using EasyHook;
-using System.IO;
-using System.Runtime.Remoting;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Diagnostics;
-using Capture.Interface;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.Remoting;
 using System.Threading;
+using System.Threading.Tasks;
+using EasyHook;
+using Overlay.Interface;
+using SharpDX;
+using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
-namespace Capture.Hook
+namespace Overlay.Hook
 {
-    public abstract class BaseDXHook: SharpDX.Component, IDXHook
+    public abstract class BaseDXHook: Component, IDXHook
     {
-        protected readonly ClientCaptureInterfaceEventProxy InterfaceEventProxy = new ClientCaptureInterfaceEventProxy();
+        private readonly ClientCaptureInterfaceEventProxy _interfaceEventProxy = new ClientCaptureInterfaceEventProxy();
 
-        public BaseDXHook(CaptureInterface ssInterface)
+        protected BaseDXHook(OverlayInterface ssInterface)
         {
             Interface = ssInterface;
             Timer = new Stopwatch();
             Timer.Start();
-            FPS = new FramesPerSecond();
 
-            Interface.DisplayText += InterfaceEventProxy.DisplayTextProxyHandler;
-            InterfaceEventProxy.ScreenshotRequested += new ScreenshotRequestedEvent(InterfaceEventProxy_ScreenshotRequested);
-            InterfaceEventProxy.DisplayText += new DisplayTextEvent(InterfaceEventProxy_DisplayText);
+            Interface.DisplayText += _interfaceEventProxy.DisplayTextProxyHandler;
+            _interfaceEventProxy.DisplayText += InterfaceEventProxy_DisplayText;
         }
         ~BaseDXHook()
         {
@@ -36,7 +36,7 @@ namespace Capture.Hook
 
         void InterfaceEventProxy_DisplayText(DisplayTextEventArgs args)
         {
-            TextDisplay = new TextDisplay()
+            TextDisplay = new TextDisplay
             {
                 Text = args.Text,
                 Duration = args.Duration
@@ -46,19 +46,14 @@ namespace Capture.Hook
         protected virtual void InterfaceEventProxy_ScreenshotRequested(ScreenshotRequest request)
         {
             
-            this.Request = request;
+            Request = request;
         }
 
         protected Stopwatch Timer { get; set; }
 
-        /// <summary>
-        /// Frames Per second counter, FPS.Frame() must be called each frame
-        /// </summary>
-        protected FramesPerSecond FPS { get; set; }
-
         protected TextDisplay TextDisplay { get; set; }
 
-        int _processId = 0;
+        int _processId;
         protected int ProcessId
         {
             get
@@ -75,7 +70,6 @@ namespace Capture.Hook
 
         protected void Frame()
         {
-            FPS.Frame();
             if (TextDisplay != null && TextDisplay.Display) 
                 TextDisplay.Frame();
         }
@@ -101,10 +95,10 @@ namespace Capture.Hook
 
         protected IntPtr[] GetVTblAddresses(IntPtr pointer, int startIndex, int numberOfMethods)
         {
-            List<IntPtr> vtblAddresses = new List<IntPtr>();
+            var vtblAddresses = new List<IntPtr>();
 
-            IntPtr vTable = Marshal.ReadIntPtr(pointer);
-            for (int i = startIndex; i < startIndex + numberOfMethods; i++)
+            var vTable = Marshal.ReadIntPtr(pointer);
+            for (var i = startIndex; i < startIndex + numberOfMethods; i++)
                 vtblAddresses.Add(Marshal.ReadIntPtr(vTable, i * IntPtr.Size)); // using IntPtr.Size allows us to support both 32 and 64-bit processes
 
             return vtblAddresses.ToArray();
@@ -112,11 +106,11 @@ namespace Capture.Hook
 
         protected static void CopyStream(Stream input, Stream output)
         {
-            int bufferSize = 32768;
-            byte[] buffer = new byte[bufferSize];
+            var bufferSize = 32768;
+            var buffer = new byte[bufferSize];
             while (true)
             {
-                int read = input.Read(buffer, 0, buffer.Length);
+                var read = input.Read(buffer, 0, buffer.Length);
                 if (read <= 0)
                 {
                     return;
@@ -133,24 +127,22 @@ namespace Capture.Hook
         /// <param name="stream">The stream to read data from</param>
         protected static byte[] ReadFullStream(Stream stream)
         {
-            if (stream is MemoryStream)
+            var memoryStream = stream as MemoryStream;
+            if (memoryStream != null)
             {
-                return ((MemoryStream)stream).ToArray();
+                return memoryStream.ToArray();
             }
-            else
+            var buffer = new byte[32768];
+            using (var ms = new MemoryStream())
             {
-                byte[] buffer = new byte[32768];
-                using (MemoryStream ms = new MemoryStream())
+                while (true)
                 {
-                    while (true)
+                    var read = stream.Read(buffer, 0, buffer.Length);
+                    if (read > 0)
+                        ms.Write(buffer, 0, read);
+                    if (read < buffer.Length)
                     {
-                        int read = stream.Read(buffer, 0, buffer.Length);
-                        if (read > 0)
-                            ms.Write(buffer, 0, read);
-                        if (read < buffer.Length)
-                        {
-                            return ms.ToArray();
-                        }
+                        return ms.ToArray();
                     }
                 }
             }
@@ -177,14 +169,14 @@ namespace Capture.Hook
             }
 
             // Copy the image data from the buffer
-            int size = height * pitch;
+            var size = height * pitch;
             var data = new byte[size];
             Marshal.Copy(pBits, data, 0, size);
 
             // Prepare the response
-            Screenshot response = null;
+            Screenshot response;
 
-            if (request.Format == Capture.Interface.ImageFormat.PixelData)
+            if (request.Format == Overlay.Interface.ImageFormat.PixelData)
             {
                 // Return the raw data
                 response = new Screenshot(request.RequestId, data)
@@ -201,14 +193,14 @@ namespace Capture.Hook
                 // Return an image
                 using (var bm = data.ToBitmap(width, height, pitch, format))
                 {
-                    System.Drawing.Imaging.ImageFormat imgFormat = System.Drawing.Imaging.ImageFormat.Bmp;
+                    var imgFormat = ImageFormat.Bmp;
                     switch (request.Format)
                     {
-                        case Capture.Interface.ImageFormat.Jpeg:
-                            imgFormat = System.Drawing.Imaging.ImageFormat.Jpeg;
+                        case Overlay.Interface.ImageFormat.Jpeg:
+                            imgFormat = ImageFormat.Jpeg;
                             break;
-                        case Capture.Interface.ImageFormat.Png:
-                            imgFormat = System.Drawing.Imaging.ImageFormat.Png;
+                        case Overlay.Interface.ImageFormat.Png:
+                            imgFormat = ImageFormat.Png;
                             break;
                     }
 
@@ -225,13 +217,12 @@ namespace Capture.Hook
             SendResponse(response);
         }
 
-        protected void SendResponse(Screenshot response)
+        private void SendResponse(Screenshot response)
         {
-            System.Threading.Tasks.Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(() =>
             {
                 try
-                {
-                 
+                {        
                     LastCaptureTime = Timer.Elapsed;
                 }
                 catch (RemotingException)
@@ -248,55 +239,39 @@ namespace Capture.Hook
 
 
 
-        private ImageCodecInfo GetEncoder(System.Drawing.Imaging.ImageFormat format)
+        private ImageCodecInfo GetEncoder(ImageFormat format)
         {
-            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageDecoders();
+            var codecs = ImageCodecInfo.GetImageDecoders();
 
-            foreach (ImageCodecInfo codec in codecs)
-            {
-                if (codec.FormatID == format.Guid)
-                {
-                    return codec;
-                }
-            }
-            return null;
+            return codecs.FirstOrDefault(codec => codec.FormatID == format.Guid);
         }
 
         private Bitmap BitmapFromBytes(byte[] bitmapData)
         {
-            using (MemoryStream ms = new MemoryStream(bitmapData))
+            using (var ms = new MemoryStream(bitmapData))
             {
                 return (Bitmap)Image.FromStream(ms);
             }
         }
 
-        protected TimeSpan LastCaptureTime
+        private TimeSpan LastCaptureTime
         {
             get;
             set;
         }
 
         protected bool CaptureThisFrame => ((Timer.Elapsed - LastCaptureTime) > CaptureDelay) || Request != null;
-        protected TimeSpan CaptureDelay { get; set; }
+        private TimeSpan CaptureDelay { get; set; }
 
         #region IDXHook Members
 
-        public CaptureInterface Interface
+        public OverlayInterface Interface
         {
             get;
             set;
         }
-        
-        private CaptureConfig _config;
-        public CaptureConfig Config
-        {
-            get => _config;
-            set
-            {
-                _config = value;
-                CaptureDelay = new TimeSpan(0, 0, 0, 0, (int)((1.0 / (double)_config.TargetFramesPerSecond) * 1000.0));
-            }
-        }
+
+        public OverlayConfig Config { get; set; }
 
         private ScreenshotRequest _request;
         public ScreenshotRequest Request
@@ -305,7 +280,7 @@ namespace Capture.Hook
             set => Interlocked.Exchange(ref _request, value);
         }
 
-        protected List<Hook> Hooks = new List<Hook>();
+        protected readonly List<Hook> Hooks = new List<Hook>();
         public abstract void Hook();
 
         public abstract void Cleanup();
@@ -337,7 +312,7 @@ namespace Capture.Hook
                             hook.Deactivate();
                         }
 
-                        System.Threading.Thread.Sleep(100);
+                        Thread.Sleep(100);
 
                         // Now we can dispose of the hooks (which triggers the removal of the hook)
                         foreach (var hook in Hooks)
@@ -351,7 +326,7 @@ namespace Capture.Hook
                     try
                     {
                         // Remove the event handlers
-                        Interface.DisplayText -= InterfaceEventProxy.DisplayTextProxyHandler;
+                        Interface.DisplayText -= _interfaceEventProxy.DisplayTextProxyHandler;
                     }
                     catch (RemotingException) { } // Ignore remoting exceptions (host process may have been closed)
                 }

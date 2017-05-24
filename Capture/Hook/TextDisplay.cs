@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace Capture.Hook
+namespace Overlay.Hook
 {
     public class TextDisplay
     {
-        long _startTickCount = 0;
+        readonly long _startTickCount = 0;
 
         public TextDisplay()
         {
@@ -26,9 +23,8 @@ namespace Capture.Hook
             }
         }
 
-        public bool Display { get; set; }
-        public String Text { get; set; }
-        public TimeSpan Duration { get; set; }
+        public bool Display { get; private set; }
+        public TimeSpan Duration { private get; set; }
         public float Remaining
         {
             get
@@ -43,5 +39,7 @@ namespace Capture.Hook
                 }
             }
         }
+
+        public string Text { get; set; }
     }
 }

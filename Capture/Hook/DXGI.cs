@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Runtime.InteropServices;
 using SharpDX.DXGI;
 
-namespace Capture.Hook
+namespace Overlay.Hook
 {
     internal static class DXGI
     {

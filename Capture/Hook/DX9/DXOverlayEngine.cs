@@ -1,14 +1,11 @@
-﻿using Capture.Hook.Common;
-using SharpDX;
-using SharpDX.Direct3D9;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
+using Overlay.Hook.Common;
+using SharpDX;
+using SharpDX.Direct3D9;
 
-namespace Capture.Hook.DX9
+namespace Overlay.Hook.DX9
 {
     [Serializable]
     public class DXOverlayEngine : Component
@@ -109,13 +106,13 @@ namespace Capture.Hook.DX9
 
                     if (textElement != null)
                     {
-                        Font font = GetFontForTextElement(textElement);
+                        var font = GetFontForTextElement(textElement);
                         if (font != null && !String.IsNullOrEmpty(textElement.Text))
                             font.DrawText(_sprite, textElement.Text, textElement.Location.X, textElement.Location.Y, new SharpDX.ColorBGRA(textElement.Color.R, textElement.Color.G, textElement.Color.B, textElement.Color.A));
                     }
                     else if (imageElement != null)
                     {
-                        Texture image = GetImageForImageElement(imageElement);
+                        var image = GetImageForImageElement(imageElement);
                         if (image != null)
                             _sprite.Draw(image, new SharpDX.ColorBGRA(imageElement.Tint.R, imageElement.Tint.G, imageElement.Tint.B, imageElement.Tint.A), null, null, new Vector3(imageElement.Location.X, imageElement.Location.Y, 0));
                     }
@@ -150,7 +147,7 @@ namespace Capture.Hook.DX9
         {
             Font result = null;
 
-            string fontKey = String.Format("{0}{1}{2}", element.Font.Name, element.Font.Size, element.Font.Style, element.AntiAliased);
+            var fontKey = String.Format("{0}{1}{2}", element.Font.Name, element.Font.Size, element.Font.Style, element.AntiAliased);
 
             if (!_fontCache.TryGetValue(fontKey, out result))
             {

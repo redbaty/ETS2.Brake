@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace Capture
+namespace Overlay
 {
     /// <summary>
     /// Indicates that the provided process does not have a window handle.

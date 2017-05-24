@@ -2,7 +2,7 @@
 using System.Runtime.Remoting;
 using System.Security.Permissions;
 
-namespace Capture.Hook.Common
+namespace Overlay.Hook.Common
 {
     [Serializable]
     public abstract class Element: MarshalByRefObject, IOverlayElement, IDisposable
@@ -55,7 +55,7 @@ namespace Capture.Hook.Common
             RemotingServices.Disconnect(this);
         }
 
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.Infrastructure)]
+        [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService()
         {
             // Returning null designates an infinite non-expiring lease.
