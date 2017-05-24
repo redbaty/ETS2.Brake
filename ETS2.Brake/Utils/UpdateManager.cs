@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Squirrel;
+using GitHubUpdate;
 
 namespace ETS2.Brake.Utils
 {
@@ -13,14 +14,21 @@ namespace ETS2.Brake.Utils
             {
                 while (true)
                 {
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
-                    using (var mgr =
-                        Squirrel.UpdateManager.GitHubUpdateManager("https://github.com/redbaty/ETS2.Brake"))
+                    var checker =
+                        new UpdateChecker("redbaty", "ETS2.Brake",
+                            fvi.ProductVersion); // uses your Application.ProductVersion
+
+                    var update = await checker.CheckUpdate();
+
+                    if (update != UpdateType.None)
                     {
-                        await mgr.Result.UpdateApp();
+                        Report.Info("There's an update available");
                     }
 
-                    Thread.Sleep(new TimeSpan(0,1,0));
+                    Thread.Sleep(new TimeSpan(0, 1, 0));
                 }
             });
         }
