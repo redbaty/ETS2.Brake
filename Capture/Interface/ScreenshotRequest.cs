@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Drawing;
 using System.Runtime.Remoting;
 using System.Security.Permissions;
 
-namespace Capture.Interface
+namespace Overlay.Interface
 {
     [Serializable]
     public class ScreenshotRequest: MarshalByRefObject, IDisposable
@@ -78,7 +75,7 @@ namespace Capture.Interface
             RemotingServices.Disconnect(this);
         }
 
-        [SecurityPermissionAttribute(SecurityAction.Demand, Flags = SecurityPermissionFlag.Infrastructure)]
+        [SecurityPermission(SecurityAction.Demand, Flags = SecurityPermissionFlag.Infrastructure)]
         public override object InitializeLifetimeService()
         {
             // Returning null designates an infinite non-expiring lease.

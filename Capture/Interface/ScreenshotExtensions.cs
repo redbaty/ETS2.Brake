@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
-namespace Capture.Interface
+namespace Overlay.Interface
 {
     public static class ScreenshotExtensions
     {
         public static Bitmap ToBitmap(this byte[] data, int width, int height, int stride, System.Drawing.Imaging.PixelFormat pixelFormat)
         {
-            GCHandle handle = GCHandle.Alloc(data, GCHandleType.Pinned);
+            var handle = GCHandle.Alloc(data, GCHandleType.Pinned);
             try
             {
                 var img = new Bitmap(width, height, stride, pixelFormat, handle.AddrOfPinnedObject());
@@ -41,10 +37,10 @@ namespace Capture.Interface
         {
             // Note: deliberately not disposing of MemoryStream, it doesn't have any unmanaged resources anyway and the GC 
             //       will deal with it. This fixes GitHub issue #19 (https://github.com/spazzarama/Direct3DHook/issues/19).
-            MemoryStream ms = new MemoryStream(imageBytes);
+            var ms = new MemoryStream(imageBytes);
             try
             {
-                Bitmap image = (Bitmap)Image.FromStream(ms);
+                var image = (Bitmap)Image.FromStream(ms);
                 return image;
             }
             catch
@@ -55,7 +51,7 @@ namespace Capture.Interface
 
         public static byte[] ToByteArray(this Image img, System.Drawing.Imaging.ImageFormat format)
         {
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
                 img.Save(stream, format);
                 stream.Close();
