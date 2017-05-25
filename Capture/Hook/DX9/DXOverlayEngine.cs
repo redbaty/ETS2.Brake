@@ -25,16 +25,21 @@ namespace Overlay.Hook.DX9
         private readonly Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
         private readonly Dictionary<Element, Texture> _imageCache = new Dictionary<Element, Texture>();
 
+        private Image BackgroundImage { get; }
+        private Image ForegroundImage { get; }
+
         public Device Device { get; private set; }
 
         public DxOverlayEngine()
         {
             Overlays = new List<IOverlay>();
+            ForegroundImage = ToDispose(GetImage(Brushes.CornflowerBlue));
+            BackgroundImage = ToDispose(GetImage(Brushes.White));
         }
 
         private void EnsureInitiliased()
         {
-            Debug.Assert(condition: _initialised);
+            Debug.Assert(_initialised);
         }
 
         public bool Initialise(Device device)
@@ -96,8 +101,9 @@ namespace Overlay.Hook.DX9
         public void Draw(int progressSize)
         {
             EnsureInitiliased();
-            DrawProgresBar(progressSize);
+           
             DrawTextElements();
+            DrawProgresBar(progressSize);
         }
 
         private void DrawTextElements()
@@ -117,7 +123,7 @@ namespace Overlay.Hook.DX9
                     if (textElement != null)
                     {
                         var font = GetFontForTextElement(textElement);
-         
+
                         if (font != null && !string.IsNullOrEmpty(textElement.Text))
                             font.DrawText(_sprite, textElement.Text, textElement.Location.X, textElement.Location.Y,
                                 new ColorBGRA(textElement.Color.R, textElement.Color.G, textElement.Color.B,
@@ -142,24 +148,24 @@ namespace Overlay.Hook.DX9
         {
             _progressBarSprite.Begin(SpriteFlags.AlphaBlend);
 
-            var backgroundProgressBarTexture = Texture.FromStream(Device,
-                GetImage(Brushes.White).ToStream(ImageFormat.Bmp), 100, 16, 0,
+            var backgroundTexture = ToDispose(Texture.FromStream(Device,
+                BackgroundImage.ToStream(ImageFormat.Bmp), 100, 16, 0,
                 Usage.None,
-                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
+                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0));
 
-            
-            var foregrundProgressBarTexture = Texture.FromStream(Device,
-                GetImage(Brushes.CornflowerBlue).ToStream(ImageFormat.Bmp), progressSize, 16, 0,
+
+            var foregroundTexture = ToDispose(Texture.FromStream(Device, ForegroundImage.ToStream(ImageFormat.Bmp),
+                progressSize, 16, 0,
                 Usage.None,
-                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
+                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0));
 
             var color = new ColorBGRA(0xffffffff);
             var pos = new Vector3(5, 5, 0);
 
-            _progressBarSprite.Draw(backgroundProgressBarTexture, color, null, null, pos);
+            _progressBarSprite.Draw(backgroundTexture, color, null, null, pos);
 
             if (progressSize > 0)
-                _progressBarSprite.Draw(foregrundProgressBarTexture, color, null, null, pos);
+                _progressBarSprite.Draw(foregroundTexture, color, null, null, pos);
 
             _progressBarSprite.End();
         }
@@ -175,50 +181,6 @@ namespace Overlay.Hook.DX9
             }
 
             return resultImage;
-        }
-
-        private void ResizeImage(Image img)
-        {
-            var imageSize = img.Size;
-
-            // Calculate scale to get correct image size
-            var transform = Matrix.AffineTransformation2D(1f, 0f, Vector2.Zero);
-            // Calculate width scale
-            if (imageSize.Width <= 128)
-            {
-                transform.M11 = (float) imageSize.Width / 128f; // scale x
-            }
-            else if (imageSize.Width <= 256)
-            {
-                transform.M11 = (float) imageSize.Width / 256f; // scale x
-            }
-            else if (imageSize.Width <= 512)
-            {
-                transform.M11 = (float) imageSize.Width / 512f; // scale x
-            }
-            else if (imageSize.Width <= 1024)
-            {
-                transform.M11 = (float) imageSize.Width / 1024f; // scale x
-            }
-            // Calculate height scale
-            if (imageSize.Height <= 128)
-            {
-                transform.M22 = (float) imageSize.Height / 128f; // scale y
-            }
-            else if (imageSize.Height <= 256)
-            {
-                transform.M22 = (float) imageSize.Height / 256f; // scale y
-            }
-            else if (imageSize.Height <= 512)
-            {
-                transform.M22 = (float) imageSize.Height / 512f; // scale y
-            }
-            else if (imageSize.Height <= 1024)
-            {
-                transform.M22 = (float) imageSize.Height / 1024f; // scale y
-            }
-
-            _progressBarSprite.Transform = transform;
         }
 
         private void End()
