@@ -44,21 +44,8 @@ namespace ETS2.Brake
                     ByPercentage((int) percentageValue), Id,
                     HID_USAGES.HID_USAGE_X);
 
-                var progressValue = Math.ByPercentage(percentageValue, 10);
-                var progressString = "";
-
-                for (var i = 0; i < progressValue; i++)
-                    progressString += "█";
-
-                if (progressString.Length < 10)
-                {
-                    var delta = 10 - progressString.Length;
-                    for (var i = 0; i < delta; i++)
-                        progressString += "░";
-                }
-
-                _overlayProcess?.OverlayInterface.SetText($"{progressString} {percentageValue}%");
-                Report.Info(percentageValue.ToString());
+                _overlayProcess?.OverlayInterface.SetProgress((int) percentageValue);
+                _overlayProcess?.OverlayInterface.SetText($"{percentageValue / 100:P}");
             }
         }
 
