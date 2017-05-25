@@ -7,15 +7,27 @@ namespace ETS2.Brake
 {
     public class Settings
     {
-        public int MaximumBreakAmount { get; set; } = 20;
-
         [JsonIgnore]
         public decimal CurrentIncreaseRatio { get; set; }
 
-        public int IncreaseRatio { get; set; } = 1;
+        /// <summary>
+        /// The time between increasing inside the increasing loop.
+        /// </summary>
+        public TimeSpan IncreaseDelay { get; set; } = new TimeSpan(0, 0, 0, 0, 50);
 
+        /// <summary>
+        /// The base increasing value
+        /// </summary>
+        public int StartIncreaseRatio { get; set; } = 150;
+
+        /// <summary>
+        /// Set if increasing the increase ratio is enabled
+        /// </summary>
         public bool IsIncreaseRatioEnabled { get; set; } = true;
 
+        /// <summary>
+        /// The time it takes to reset the increase value back to it's base after releasing the 'S' key.
+        /// </summary>
         public TimeSpan ResetIncreaseRatioTimeSpan { get; set; } = new TimeSpan(0, 0, 0, 0, 500);
 
         public bool Save(string path)
