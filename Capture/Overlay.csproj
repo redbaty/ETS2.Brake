@@ -110,6 +110,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Elements\Memory.cs" />
     <Compile Include="Extensions\ImageExtensions.cs" />
     <Compile Include="OverlayProcess.cs" />
     <Compile Include="Exceptions.cs" />

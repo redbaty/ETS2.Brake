@@ -5,12 +5,12 @@ namespace Overlay.Elements
     [Serializable]
     public class FramesPerSecond: TextElement
     {
-        public static string _fpsFormat = "{0:N0} fps";
+        public static string FpsFormat = "{0:N0} fps";
 
         public override string Text
         {
-            get => string.Format(_fpsFormat, GetFPS());
-            set => _fpsFormat = value;
+            get => string.Format(FpsFormat, GetFPS());
+            set => FpsFormat = value;
         }
 
         int _frames = 0;

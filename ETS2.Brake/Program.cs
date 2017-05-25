@@ -18,8 +18,6 @@ namespace ETS2.Brake
 {
     internal static class Program
     {
-        private const uint Id = 1;
-
         private static bool IsRunning
         {
             get => _isRunning;
@@ -60,7 +58,6 @@ namespace ETS2.Brake
         private static CancellationTokenSource _increaseRatioResetToken = new CancellationTokenSource();
         private static OverlayProcess _overlayProcess;
 
-        private static long _maxValue;
         private static decimal _currentBreakAmount;
         private static bool _isRunning;
 
@@ -69,14 +66,12 @@ namespace ETS2.Brake
             get => _currentBreakAmount;
             set
             {
-                if (value > Settings.MaximumBreakAmount)
-                    value = Settings.MaximumBreakAmount;
+                if (value > JoystickManager.MaxValue)
+                    value = JoystickManager.MaxValue;
 
                 _currentBreakAmount = value;
-                var percentageValue = value / Settings.MaximumBreakAmount * 100;
-                JoystickManager.Joystick.SetAxis(
-                    ByPercentage((int) percentageValue), Id,
-                    HID_USAGES.HID_USAGE_X);
+                var percentageValue = value / JoystickManager.MaxValue * 100;
+                JoystickManager.SetValue(ByPercentage((int) percentageValue));
 
                 _overlayProcess?.OverlayInterface.SetProgress((int) percentageValue);
                 _overlayProcess?.OverlayInterface.SetText($"{percentageValue / 100:0%}");
@@ -85,7 +80,7 @@ namespace ETS2.Brake
 
         private static int ByPercentage(int percentage)
         {
-            return Math.ByPercentage(percentage, _maxValue);
+            return Math.ByPercentage(percentage, JoystickManager.MaxValue);
         }
 
         [STAThread]
@@ -102,7 +97,14 @@ namespace ETS2.Brake
                     var response = Console.ReadLine().ToLower();
                     if (response == "y" || response == "yes")
                     {
-                        Settings.Save("config.json");
+                        try
+                        {
+                            Settings.Save("config.json");
+                        }
+                        catch (Exception ex)
+                        {
+                            Report.Error($"Failed to save config file. {ex.Message}");
+                        }
                         break;
                     }
                     if (response == "n" || response == "n")
@@ -118,18 +120,24 @@ namespace ETS2.Brake
                 return;
 
             Report.Success("Joystick have been acquired");
-            ResetJoystick();
 
+            JoystickManager.Reset();
             HotKeyManager.Loaded += HotKeyManagerOnLoaded;
             ConsoleManager.Enable();
             ConsoleManager.ConsoleClosing += ConsoleManagerOnConsoleClosing;
             UpdateManager.CheckForUpdates();
-            Settings.Save("config.json");
+
+            try
+            {
+                Settings.Save("config.json");
+            }
+            catch (Exception ex)
+            {
+                Report.Error($"Failed to save config file. {ex.Message}");
+            }
 
             if (Settings.IsIncreaseRatioEnabled)
             {
-                Settings.MaximumBreakAmount = (int) _maxValue;
-                Settings.IncreaseRatio = 150;
                 Settings.ResetIncreaseRatioTimeSpan = new TimeSpan(0, 0, 0, 1, 0);
             }
 
@@ -152,7 +160,7 @@ namespace ETS2.Brake
                 if (item == null && IsRunning)
                 {
                     IsRunning = false;
-                    ResetJoystick();
+                    JoystickManager.Reset();
                 }
 
                 Thread.Sleep(2000);
@@ -179,7 +187,7 @@ namespace ETS2.Brake
                 {
                     Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
                     if (!Keys.S.IsPressed())
-                        Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+                        Settings.CurrentIncreaseRatio = Settings.StartIncreaseRatio;
                 }, _increaseRatioResetToken.Token);
             }
         }
@@ -238,15 +246,9 @@ namespace ETS2.Brake
             }
         }
 
-        private static void ResetJoystick()
-        {
-            JoystickManager.Joystick.GetVJDAxisMax(Id, HID_USAGES.HID_USAGE_X, ref _maxValue);
-            CurrentBreakAmount = 0;
-        }
-
         private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args)
         {
-            ResetJoystick();
+            JoystickManager.Reset();
             _overlayProcess.OverlayInterface.Disconnect();
         }
 
@@ -259,14 +261,13 @@ namespace ETS2.Brake
 
                 if (Settings.IsIncreaseRatioEnabled)
                 {
-                    var increaseAmount = Settings.IncreaseRatio;
-                    Settings.CurrentIncreaseRatio += increaseAmount;
+                    Settings.CurrentIncreaseRatio += 50;
                     CurrentBreakAmount += Settings.CurrentIncreaseRatio;
                 }
                 else
                     CurrentBreakAmount++;
 
-                Thread.Sleep(100);
+                Thread.Sleep(Settings.IncreaseDelay);
             }
         }
 
@@ -276,7 +277,7 @@ namespace ETS2.Brake
             {
                 if (Keys.S.IsPressed())
                 {
-                    if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
+                    if (CurrentBreakAmount >= JoystickManager.MaxValue) return;
                     _increaseRatioResetToken.Cancel();
                     _increaseRatioResetToken = new CancellationTokenSource();
                     IsIncreaseLoopRunning = true;
@@ -286,7 +287,7 @@ namespace ETS2.Brake
                 {
                     IsIncreaseLoopRunning = false;
                     CurrentBreakAmount = 0;
-                    Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+                    Settings.CurrentIncreaseRatio = Settings.StartIncreaseRatio;
                 }
             }
         }

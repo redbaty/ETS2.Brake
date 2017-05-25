@@ -5,8 +5,10 @@ namespace ETS2.Brake.Managers
 {
     internal static class JoystickManager
     {
-        private static readonly uint Id = 1;
-        public static vJoy Joystick { get; } = new vJoy();
+        private const uint Id = 1;
+        private static vJoy Joystick { get; } = new vJoy();
+
+        public static int MaxValue { get; private set; }
 
         public static vJoy.JoystickState JoystickReport { get; } = new vJoy.JoystickState();
 
@@ -25,13 +27,32 @@ namespace ETS2.Brake.Managers
                 return false;
             }
 
-            if (status == VjdStat.VJD_STAT_OWN || status == VjdStat.VJD_STAT_FREE && !Joystick.AcquireVJD(Id))
+
+
+            if (status != VjdStat.VJD_STAT_OWN &&
+                (status != VjdStat.VJD_STAT_FREE || Joystick.AcquireVJD(Id)))
             {
-                Report.Error("Failed to acquire vJoy device number {0}");
-                return false;
+                long maxValue = 0;
+                Joystick.GetVJDAxisMax(Id, HID_USAGES.HID_USAGE_X, ref maxValue);
+                MaxValue = (int)maxValue;
+                return true;
             }
 
-            return true;
+            Report.Error("Failed to acquire vJoy device number {0}");
+
+
+
+            return false;
+        }
+
+        public static void SetValue(int value)
+        {
+            Joystick.SetAxis(value, Id,HID_USAGES.HID_USAGE_X);
+        }
+
+        public static void Reset()
+        {
+            Joystick.SetAxis(0, Id, HID_USAGES.HID_USAGE_X);
         }
     }
 }

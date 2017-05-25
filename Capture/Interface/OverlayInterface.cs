@@ -1,7 +1,5 @@
 ﻿using System;
 using Overlay.Elements;
-using Overlay.Hook.Common;
-using Overlay.Hook.DX9;
 
 namespace Overlay.Interface
 {
@@ -23,9 +21,9 @@ namespace Overlay.Interface
         public int ProgressPercentage { get; private set; }
 
         /// <summary>
-        /// The main TextElement
+        /// The main PercentageText
         /// </summary>
-        public TextElement TextElement { private get; set; }
+        public TextElement PercentageText { private get; set; }
 
         #region Events
 
@@ -66,7 +64,7 @@ namespace Overlay.Interface
         {
             try
             {
-                TextElement.Text = fps;
+                PercentageText.Text = fps;
             }
             catch
             {
@@ -102,7 +100,7 @@ namespace Overlay.Interface
         /// <param name="args"></param>
         public void Message(MessageType messageType, string format, params object[] args)
         {
-            Message(messageType, String.Format(format, args));
+            Message(messageType, string.Format(format, args));
         }
 
         public void Message(MessageType messageType, string message)
@@ -127,7 +125,7 @@ namespace Overlay.Interface
         public void DisplayInGameText(string text, TimeSpan duration)
         {
             if (duration.TotalMilliseconds <= 0)
-                throw new ArgumentException("Duration must be larger than 0", "duration");
+                throw new ArgumentException("Duration must be larger than 0", nameof(duration));
             SafeInvokeDisplayText(new DisplayTextEventArgs(text, duration));
         }
 
