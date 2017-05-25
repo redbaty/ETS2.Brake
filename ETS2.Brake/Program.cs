@@ -20,14 +20,49 @@ namespace ETS2.Brake
     {
         private const uint Id = 1;
 
-        private static bool IsRunning { get; set; }
+        private static bool IsRunning
+        {
+            get => _isRunning;
+            set
+            {
+                if (_isRunning && !value)
+                    _overlayProcess.OverlayInterface.Disconnect();
+
+                _isRunning = value;
+
+                if (_isRunning)
+                    try
+                    {
+                        AttachProcess("eurotrucks2");
+                    }
+                    catch
+                    {
+                        Report.Error("Could not hook the overlay to the game.");
+                    }
+            }
+        }
+
+        private static bool IsIncreaseLoopRunning
+        {
+            set
+            {
+                _increaseLoopResetToken = new CancellationTokenSource();
+
+                if (value)
+                    Task.Factory.StartNew(IncreaseLoop, _increaseLoopResetToken.Token);
+                else
+                    _increaseLoopResetToken.Cancel();
+            }
+        }
 
         private static readonly Settings Settings = new Settings();
-        private static CancellationTokenSource _resetToken = new CancellationTokenSource();
+        private static CancellationTokenSource _increaseLoopResetToken = new CancellationTokenSource();
+        private static CancellationTokenSource _increaseRatioResetToken = new CancellationTokenSource();
         private static OverlayProcess _overlayProcess;
 
         private static long _maxValue;
         private static decimal _currentBreakAmount;
+        private static bool _isRunning;
 
         private static decimal CurrentBreakAmount
         {
@@ -38,13 +73,13 @@ namespace ETS2.Brake
                     value = Settings.MaximumBreakAmount;
 
                 _currentBreakAmount = value;
-                var percentageValue = (value / Settings.MaximumBreakAmount) * 100;
+                var percentageValue = value / Settings.MaximumBreakAmount * 100;
                 JoystickManager.Joystick.SetAxis(
                     ByPercentage((int) percentageValue), Id,
                     HID_USAGES.HID_USAGE_X);
 
                 _overlayProcess?.OverlayInterface.SetProgress((int) percentageValue);
-                _overlayProcess?.OverlayInterface.SetText($"{percentageValue / 100:P}");
+                _overlayProcess?.OverlayInterface.SetText($"{percentageValue / 100:0%}");
             }
         }
 
@@ -93,8 +128,9 @@ namespace ETS2.Brake
 
             if (Settings.IsIncreaseRatioEnabled)
             {
-                Settings.MaximumBreakAmount = (int)_maxValue;
+                Settings.MaximumBreakAmount = (int) _maxValue;
                 Settings.IncreaseRatio = 150;
+                Settings.ResetIncreaseRatioTimeSpan = new TimeSpan(0, 0, 0, 1, 0);
             }
 
             while (true)
@@ -110,14 +146,7 @@ namespace ETS2.Brake
                     if (HookManager.IsHooked(item.Id))
                         continue;
 
-                    try
-                    {
-                        AttachProcess("eurotrucks2");
-                    }
-                    catch
-                    {
-                        AttachProcess("eurotrucks2");
-                    }
+                    IsRunning = true;
                 }
 
                 if (item == null && IsRunning)
@@ -126,7 +155,7 @@ namespace ETS2.Brake
                     ResetJoystick();
                 }
 
-                Thread.Sleep(5000);
+                Thread.Sleep(2000);
             }
         }
 
@@ -137,12 +166,26 @@ namespace ETS2.Brake
             HotKeyManager.Add(Keys.S);
             HotKeyManager.Add(Keys.D);
             HotKeyManager.HotKeyPressedDown += OnKeyDown;
+            HotKeyManager.HotKeyPressedUp += HotKeyManagerOnHotKeyPressedUp;
             Report.Success("Hotkeys loaded and applied");
+        }
+
+        private static void HotKeyManagerOnHotKeyPressedUp(object sender, KeyEventArgs keyEventArgs)
+        {
+            if (keyEventArgs.KeyCode == Keys.S)
+            {
+                IsIncreaseLoopRunning = false;
+                Task.Factory.StartNew(() =>
+                {
+                    Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
+                    if (!Keys.S.IsPressed())
+                        Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+                }, _increaseRatioResetToken.Token);
+            }
         }
 
         private static void AttachProcess(string processname)
         {
-            IsRunning = true;
             var exeName = Path.GetFileNameWithoutExtension(processname);
 
             var processes = Process.GetProcessesByName(exeName);
@@ -163,7 +206,7 @@ namespace ETS2.Brake
                 var captureInterface = new OverlayInterface();
                 captureInterface.RemoteMessage += CaptureInterface_RemoteMessage;
                 _overlayProcess = new OverlayProcess(process, cc, captureInterface);
-                _overlayProcess.OverlayInterface.SetText($"ETS.Brake loaded");
+                _overlayProcess.OverlayInterface.SetText("ETS.Brake loaded");
                 break;
             }
 
@@ -197,44 +240,55 @@ namespace ETS2.Brake
 
         private static void ResetJoystick()
         {
-            JoystickManager.Joystick.ResetVJD(Id);
             JoystickManager.Joystick.GetVJDAxisMax(Id, HID_USAGES.HID_USAGE_X, ref _maxValue);
             CurrentBreakAmount = 0;
         }
 
-        private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args) => ResetJoystick();
+        private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args)
+        {
+            ResetJoystick();
+            _overlayProcess.OverlayInterface.Disconnect();
+        }
+
+        private static void IncreaseLoop()
+        {
+            while (true)
+            {
+                if (_increaseLoopResetToken.IsCancellationRequested)
+                    break;
+
+                if (Settings.IsIncreaseRatioEnabled)
+                {
+                    var increaseAmount = Settings.IncreaseRatio;
+                    Settings.CurrentIncreaseRatio += increaseAmount;
+                    CurrentBreakAmount += Settings.CurrentIncreaseRatio;
+                }
+                else
+                    CurrentBreakAmount++;
+
+                Thread.Sleep(100);
+            }
+        }
 
         private static void OnKeyDown(object sender, KeyEventArgs keyEventArgs)
         {
             if (WindowsUtils.GetActiveWindowTitle() == "Euro Truck Simulator 2")
+            {
                 if (Keys.S.IsPressed())
                 {
-                    _resetToken.Cancel();
-                    _resetToken = new CancellationTokenSource();
-
                     if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
-
-                    if (Settings.IsIncreaseRatioEnabled)
-                    {
-                        var increaseAmount = Settings.IncreaseRatio;
-                        Settings.CurrentIncreaseRatio += increaseAmount;
-                        CurrentBreakAmount += Settings.CurrentIncreaseRatio;
-                    }
-                    else
-                        CurrentBreakAmount++;
-
-                    Task.Factory.StartNew(() =>
-                        {
-                            Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
-                            Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
-                        },
-                        _resetToken.Token);
+                    _increaseRatioResetToken.Cancel();
+                    _increaseRatioResetToken = new CancellationTokenSource();
+                    IsIncreaseLoopRunning = true;
                 }
-                else if (Keys.W.IsPressed() && CurrentBreakAmount > 0)
+
+                if (Keys.W.IsPressed() && CurrentBreakAmount > 0)
                 {
+                    IsIncreaseLoopRunning = false;
                     CurrentBreakAmount = 0;
                     Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
                 }
+            }
         }
     }
 }

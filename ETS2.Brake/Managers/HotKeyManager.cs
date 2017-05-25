@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using ETS2.Brake.Utils;
 using Open.WinKeyboardHook;
@@ -49,7 +50,7 @@ namespace ETS2.Brake.Managers
             HotKeyPressedDown?.Invoke(null, e);
         }
 
-        public static Dictionary<Keys,bool> KeysPressed { get; set; } = new Dictionary<Keys, bool>();
+        private static Dictionary<Keys,bool> KeysPressed { get; } = new Dictionary<Keys, bool>();
 
         public static bool IsPressed(this Keys key)
         {
@@ -96,6 +97,10 @@ namespace ETS2.Brake.Managers
             {
                 base.SetVisibleCore(false);
             }
+
+
         }
+
+
     }
 }
