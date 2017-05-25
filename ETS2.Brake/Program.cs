@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -80,26 +79,23 @@ namespace ETS2.Brake
                     Report.Error("Sorry, type (y)es/(n)o only");
                 }
             }
-
             if (!JoystickManager.ValidateAndStart())
                 return;
 
             Report.Success("Joystick have been acquired");
             ResetJoystick();
 
-            HotKeyManager.Loaded += (sender, eventArgs) =>
-            {
-                HotKeyManager.Add(Keys.S);
-                HotKeyManager.Add(Keys.W);
-                HotKeyManager.Add(Keys.X);
-                HotKeyManager.HotKeyPressedDown += HotKeyManagerOnHotKeyPressedUp;
-                Report.Success("Hotkeys loaded and applied");
-            };
-
+            HotKeyManager.Loaded += HotKeyManagerOnLoaded;
             ConsoleManager.Enable();
             ConsoleManager.ConsoleClosing += ConsoleManagerOnConsoleClosing;
             UpdateManager.CheckForUpdates();
             Settings.Save("config.json");
+
+            if (Settings.IsIncreaseRatioEnabled)
+            {
+                Settings.MaximumBreakAmount = (int)_maxValue;
+                Settings.IncreaseRatio = 150;
+            }
 
             while (true)
             {
@@ -122,7 +118,6 @@ namespace ETS2.Brake
                     {
                         AttachProcess("eurotrucks2");
                     }
-                    IsRunning = true;
                 }
 
                 if (item == null && IsRunning)
@@ -135,8 +130,19 @@ namespace ETS2.Brake
             }
         }
 
+        private static void HotKeyManagerOnLoaded(object sender, EventArgs eventArgs)
+        {
+            HotKeyManager.Add(Keys.W);
+            HotKeyManager.Add(Keys.A);
+            HotKeyManager.Add(Keys.S);
+            HotKeyManager.Add(Keys.D);
+            HotKeyManager.HotKeyPressedDown += OnKeyDown;
+            Report.Success("Hotkeys loaded and applied");
+        }
+
         private static void AttachProcess(string processname)
         {
+            IsRunning = true;
             var exeName = Path.GetFileNameWithoutExtension(processname);
 
             var processes = Process.GetProcessesByName(exeName);
@@ -169,53 +175,66 @@ namespace ETS2.Brake
 
         private static void CaptureInterface_RemoteMessage(MessageReceivedEventArgs message)
         {
-            Report.Info(message.Message);
+            switch (message.MessageType)
+            {
+                case MessageType.Debug:
+                    if (Debugger.IsAttached)
+                        Report.Debug(message.Message);
+                    break;
+                case MessageType.Information:
+                    Report.Info(message.Message);
+                    break;
+                case MessageType.Warning:
+                    Report.Warning(message.Message);
+                    break;
+                case MessageType.Error:
+                    Report.Error(message.Message);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         private static void ResetJoystick()
         {
             JoystickManager.Joystick.ResetVJD(Id);
             JoystickManager.Joystick.GetVJDAxisMax(Id, HID_USAGES.HID_USAGE_X, ref _maxValue);
-            JoystickManager.Joystick.SetAxis(0, Id, HID_USAGES.HID_USAGE_X);
+            CurrentBreakAmount = 0;
         }
 
-        private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args)
-        {
-            ResetJoystick();
-        }
+        private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args) => ResetJoystick();
 
-        private static void HotKeyManagerOnHotKeyPressedUp(object sender, KeyEventArgs hotKeyEventArgs)
+        private static void OnKeyDown(object sender, KeyEventArgs keyEventArgs)
         {
             if (WindowsUtils.GetActiveWindowTitle() == "Euro Truck Simulator 2")
-            if (hotKeyEventArgs.KeyCode == Keys.S)
-            {
-                _resetToken.Cancel();
-                _resetToken = new CancellationTokenSource();
-
-                if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
-
-                if (Settings.IsIncreaseRatioEnabled)
+                if (Keys.S.IsPressed())
                 {
-                    var increaseAmount = CurrentBreakAmount > 0 ? CurrentBreakAmount : 1 * Settings.IncreaseRatio;
-                    Report.Info($"D: {increaseAmount.ToString(CultureInfo.InvariantCulture)}");
-                    Settings.CurrentIncreaseRatio += increaseAmount;
-                    CurrentBreakAmount += Settings.CurrentIncreaseRatio;
-                }
-                else
-                    CurrentBreakAmount++;
+                    _resetToken.Cancel();
+                    _resetToken = new CancellationTokenSource();
 
-                Task.Factory.StartNew(() =>
+                    if (CurrentBreakAmount >= Settings.MaximumBreakAmount) return;
+
+                    if (Settings.IsIncreaseRatioEnabled)
                     {
-                        Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
-                        Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
-                    },
-                    _resetToken.Token);
-            }
-            else if (hotKeyEventArgs.KeyCode == Keys.W && CurrentBreakAmount > 0)
-            {
-                CurrentBreakAmount = 0;
-                Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
-            }
+                        var increaseAmount = Settings.IncreaseRatio;
+                        Settings.CurrentIncreaseRatio += increaseAmount;
+                        CurrentBreakAmount += Settings.CurrentIncreaseRatio;
+                    }
+                    else
+                        CurrentBreakAmount++;
+
+                    Task.Factory.StartNew(() =>
+                        {
+                            Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
+                            Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+                        },
+                        _resetToken.Token);
+                }
+                else if (Keys.W.IsPressed() && CurrentBreakAmount > 0)
+                {
+                    CurrentBreakAmount = 0;
+                    Settings.CurrentIncreaseRatio = Settings.IncreaseRatio;
+                }
         }
     }
 }

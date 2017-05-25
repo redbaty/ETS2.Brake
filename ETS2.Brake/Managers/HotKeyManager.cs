@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
 using ETS2.Brake.Utils;
+using Open.WinKeyboardHook;
 
 namespace ETS2.Brake.Managers
 {
@@ -47,11 +49,20 @@ namespace ETS2.Brake.Managers
             HotKeyPressedDown?.Invoke(null, e);
         }
 
-        private class MessageWindow : Form
+        public static Dictionary<Keys,bool> KeysPressed { get; set; } = new Dictionary<Keys, bool>();
+
+        public static bool IsPressed(this Keys key)
         {
+            if (KeysPressed.ContainsKey(key))
+                return KeysPressed[key];
+            return false;
+        }
+
+        private class MessageWindow : Form
+        {   
             public MessageWindow()
             {
-                GlobalKeyboardHook = new GlobalKeyboardHook();
+                 GlobalKeyboardHook = new GlobalKeyboardHook();
                 _wnd = this;
 
                 GlobalKeyboardHook.KeyUp += GkhOnKeyUp;
@@ -61,14 +72,23 @@ namespace ETS2.Brake.Managers
 
             public GlobalKeyboardHook GlobalKeyboardHook { get; }
 
+            private void AddOrSet(Keys key, bool value)
+            {
+                if (KeysPressed.ContainsKey(key))
+                   KeysPressed[key] = value;
+                else
+                    KeysPressed.Add(key,value);
+            }
 
             private void GlobalKeyboardHookOnKeyDown(object sender, KeyEventArgs keyEventArgs)
             {
+                AddOrSet(keyEventArgs.KeyCode, true);
                 OnHotKeyPressedDown(keyEventArgs);
             }
 
             private void GkhOnKeyUp(object sender, KeyEventArgs keyEventArgs)
             {
+                AddOrSet(keyEventArgs.KeyCode, false);
                 OnHotKeyPressedUp(keyEventArgs);
             }
 
