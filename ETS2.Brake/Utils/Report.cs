@@ -21,7 +21,17 @@ namespace ETS2.Brake.Utils
             Any("Info", Color.CornflowerBlue, message, Color.Gray);
         }
 
-        public static void Any(string type, Color typeColor, string message, Color messageColor)
+        public static void Warning(string message)
+        {
+            Any("Warn", Color.Yellow, message, Color.Gray);
+        }
+
+        public static void Debug(string message)
+        {
+            Any("Debug", Color.Gray, message, Color.Gray);
+        }
+
+        private static void Any(string type, Color typeColor, string message, Color messageColor)
         {
             Console.Write($"[{DateTime.Now.ToLongTimeString()}]", Color.Gray);
             Console.Write($"[{type}] ", typeColor);
