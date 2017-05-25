@@ -1,4 +1,7 @@
 ﻿using System;
+using Overlay.Elements;
+using Overlay.Hook.Common;
+using Overlay.Hook.DX9;
 
 namespace Overlay.Interface
 {
@@ -15,11 +18,14 @@ namespace Overlay.Interface
     public class OverlayInterface : MarshalByRefObject
     {
         /// <summary>
-        /// The client process Id
+        /// The progress bar width, in percentage
         /// </summary>
-        public int ProcessId { get; set; }
+        public int ProgressPercentage { get; private set; }
 
-        public Hook.Common.TextElement TextElement { get; set; }
+        /// <summary>
+        /// The main TextElement
+        /// </summary>
+        public TextElement TextElement { private get; set; }
 
         #region Events
 
@@ -52,6 +58,10 @@ namespace Overlay.Interface
 
         #region Still image Capture
 
+        /// <summary>
+        /// Sets the main textElement text
+        /// </summary>
+        /// <param name="fps"></param>
         public void SetText(string fps)
         {
             try
@@ -60,8 +70,18 @@ namespace Overlay.Interface
             }
             catch
             {
-                Message(MessageType.Error, "Failed to set DirectX text");
+                Message(MessageType.Warning, "Failed to set DirectX text");
             }
+        }
+
+
+        /// <summary>
+        /// Sets the progress bar width
+        /// </summary>
+        /// <param name="progress"></param>
+        public void SetProgress(int progress)
+        {
+            ProgressPercentage = progress;
         }
 
         #endregion
