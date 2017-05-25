@@ -312,18 +312,26 @@ namespace Overlay.Hook
                             Color = Color.White,
                             AntiAliased = true
                         };
+                        var item2 = new Memory(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                        {
+                            Location = new Point(5, 20),
+                            Text = "",
+                            Color = Color.White,
+                        };
+
+
                         // Create Overlay
                         _overlayEngine.Overlays.Add(new Common.Overlay
                         {
                             Elements =
                             {
-                                item
+                                item,
+                                item2
                             }
                         });
 
                         _overlayEngine.Initialise(device);
-
-                        Interface.TextElement = item;
+                        Interface.PercentageText = item;
                         Interface.Message(MessageType.Information, "Overlay engine started");
                     }
                     // Draw Overlay(s)
@@ -332,7 +340,6 @@ namespace Overlay.Hook
                         foreach (var overlay in _overlayEngine.Overlays)
                             overlay.Frame();
                         _overlayEngine.Draw(Interface.ProgressPercentage);
-                        
                     }
 
                     #endregion
