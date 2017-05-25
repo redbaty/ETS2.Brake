@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Overlay.Hook.Common
+namespace Overlay.Elements
 {
     [Serializable]
     public class FramesPerSecond: TextElement

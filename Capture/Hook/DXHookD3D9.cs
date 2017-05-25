@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Overlay.Elements;
 using Overlay.Hook.Common;
 using Overlay.Hook.DX9;
 using Overlay.Interface;
@@ -18,7 +19,7 @@ using Rectangle = SharpDX.Rectangle;
 
 namespace Overlay.Hook
 {
-    public class DxHookD3D9 : BaseDXHook
+    public class DxHookD3D9 : BaseDxHook
     {
         public DxHookD3D9(OverlayInterface ssInterface)
             : base(ssInterface)
@@ -280,7 +281,7 @@ namespace Overlay.Hook
             return _direct3DDeviceEndSceneHook.Original(devicePtr);
         }
 
-        private DXOverlayEngine _overlayEngine;
+        private DxOverlayEngine _overlayEngine;
 
         /// <summary>
         /// Implementation of capturing from the render target of the Direct3D9 Device (or DeviceEx)
@@ -293,125 +294,6 @@ namespace Overlay.Hook
 
             try
             {
-                #region Screenshot Request
-
-                // If we have issued the command to copy data to our render target, check if it is complete
-                bool qryResult;
-                if (_queryIssued && _requestCopy != null && _query.GetData(out qryResult, false))
-                {
-                    // The GPU has finished copying data to _renderTargetCopy, we can now lock
-                    // the data and access it on another thread.
-
-                    _queryIssued = false;
-
-                    // Lock the render target
-                    Rectangle rect;
-                    var lockedRect = LockRenderTarget(_renderTargetCopy, out rect);
-                    _renderTargetCopyLocked = true;
-
-                    // Copy the data from the render target
-                    Task.Factory.StartNew(() =>
-                    {
-                        lock (_lockRenderTarget)
-                        {
-                            ProcessCapture(rect.Width, rect.Height, lockedRect.Pitch,
-                                _renderTargetCopy.Description.Format.ToPixelFormat(), lockedRect.DataPointer,
-                                _requestCopy);
-                        }
-                    });
-                }
-
-                // Single frame capture request
-                if (Request != null)
-                {
-                    var start = DateTime.Now;
-                    try
-                    {
-                        using (var renderTarget = device.GetRenderTarget(0))
-                        {
-                            int width, height;
-
-                            // If resizing of the captured image, determine correct dimensions
-                            if (Request.Resize != null &&
-                                (renderTarget.Description.Width > Request.Resize.Value.Width ||
-                                 renderTarget.Description.Height > Request.Resize.Value.Height))
-                            {
-                                if (renderTarget.Description.Width > Request.Resize.Value.Width)
-                                {
-                                    width = Request.Resize.Value.Width;
-                                    height = (int) Math.Round((renderTarget.Description.Height *
-                                                               (Request.Resize.Value.Width / (double) renderTarget
-                                                                    .Description.Width)));
-                                }
-                                else
-                                {
-                                    height = Request.Resize.Value.Height;
-                                    width = (int) Math.Round((renderTarget.Description.Width *
-                                                              (Request.Resize.Value.Height / (double) renderTarget
-                                                                   .Description.Height)));
-                                }
-                            }
-                            else
-                            {
-                                width = renderTarget.Description.Width;
-                                height = renderTarget.Description.Height;
-                            }
-
-                            // If existing _renderTargetCopy, ensure that it is the correct size and format
-                            if (_renderTargetCopy != null &&
-                                (_renderTargetCopy.Description.Width != width ||
-                                 _renderTargetCopy.Description.Height != height ||
-                                 _renderTargetCopy.Description.Format != renderTarget.Description.Format))
-                            {
-                                // Cleanup resources
-                                Cleanup();
-                            }
-
-                            // Ensure that we have something to put the render target data into
-                            if (!_resourcesInitialised || _renderTargetCopy == null)
-                            {
-                                CreateResources(device, width, height, renderTarget.Description.Format);
-                            }
-
-                            // Resize from render target Surface to resolvedSurface (also deals with resolving multi-sampling)
-                            device.StretchRectangle(renderTarget, _resolvedTarget, TextureFilter.None);
-                        }
-
-                        // If the render target is locked from a previous request unlock it
-                        if (_renderTargetCopyLocked)
-                        {
-                            // Wait for the the ProcessCapture thread to finish with it
-                            lock (_lockRenderTarget)
-                            {
-                                if (_renderTargetCopyLocked)
-                                {
-                                    _renderTargetCopy.UnlockRectangle();
-                                    _renderTargetCopyLocked = false;
-                                }
-                            }
-                        }
-
-                        // Copy data from resolved target to our render target copy
-                        device.GetRenderTargetData(_resolvedTarget, _renderTargetCopy);
-
-                        _requestCopy = Request.Clone();
-                        _query.Issue(Issue.End);
-                        _queryIssued = true;
-                    }
-                    finally
-                    {
-                        // We have completed the request - mark it as null so we do not continue to try to capture the same request
-                        // Note: If you are after high frame rates, consider implementing buffers here to capture more frequently
-                        //         and send back to the host application as needed. The IPC overhead significantly slows down 
-                        //         the whole process if sending frame by frame.
-                        Request = null;
-                    }
-                    var end = DateTime.Now;
-                    DebugMessage(hook + ": Capture time: " + (end - start));
-                }
-
-                #endregion
-
                 if (Config.ShowOverlay)
                 {
                     #region Draw Overlay
@@ -423,11 +305,11 @@ namespace Overlay.Hook
                         if (_overlayEngine != null)
                             RemoveAndDispose(ref _overlayEngine);
 
-                        _overlayEngine = ToDispose(new DXOverlayEngine());
+                        _overlayEngine = ToDispose(new DxOverlayEngine());
                         var item = new TextElement(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
                         {
-                            Location = new Point(5, 5),
-                            Color = Color.Red,
+                            Location = new Point(110, 5),
+                            Color = Color.White,
                             AntiAliased = true
                         };
                         // Create Overlay
@@ -449,7 +331,8 @@ namespace Overlay.Hook
                     {
                         foreach (var overlay in _overlayEngine.Overlays)
                             overlay.Frame();
-                        _overlayEngine.Draw();
+                        _overlayEngine.Draw(Interface.ProgressPercentage);
+                        
                     }
 
                     #endregion

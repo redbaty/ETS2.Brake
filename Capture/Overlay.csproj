@@ -110,11 +110,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\ImageExtensions.cs" />
     <Compile Include="OverlayProcess.cs" />
     <Compile Include="Exceptions.cs" />
-    <Compile Include="Hook\Common\Element.cs" />
-    <Compile Include="Hook\Common\FramesPerSecond.cs" />
-    <Compile Include="Hook\Common\ImageElement.cs" />
+    <Compile Include="Elements\Element.cs" />
+    <Compile Include="Elements\FramesPerSecond.cs" />
+    <Compile Include="Elements\ImageElement.cs" />
     <Compile Include="Hook\Common\IOverlay.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -122,7 +123,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Hook\Common\Overlay.cs" />
-    <Compile Include="Hook\Common\TextElement.cs" />
+    <Compile Include="Elements\TextElement.cs" />
     <Compile Include="Hook\DX9\DXOverlayEngine.cs" />
     <Compile Include="Hook\SafeHGlobal.cs" />
     <Compile Include="Hook\DX9FormatExtension.cs" />

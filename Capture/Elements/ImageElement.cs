@@ -1,4 +1,4 @@
-﻿namespace Overlay.Hook.Common
+﻿namespace Overlay.Elements
 {
     public class ImageElement: Element
     {

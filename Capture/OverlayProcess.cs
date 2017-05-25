@@ -40,7 +40,6 @@ namespace Overlay
                 throw new ProcessAlreadyHookedException();
             }
 
-            overlayInterface.ProcessId = process.Id;
             _serverInterface = overlayInterface;
             //_serverInterface = new OverlayInterface() { ProcessId = process.Id };
 

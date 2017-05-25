@@ -1,35 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using Overlay.Elements;
+using Overlay.Extensions;
 using Overlay.Hook.Common;
 using SharpDX;
 using SharpDX.Direct3D9;
+using Font = SharpDX.Direct3D9.Font;
 
 namespace Overlay.Hook.DX9
 {
     [Serializable]
-    public class DXOverlayEngine : Component
+    public class DxOverlayEngine : Component
     {
-        public List<IOverlay> Overlays { get; set; }
+        public List<IOverlay> Overlays { get; }
 
-        bool _initialised = false;
-        bool _initialising = false;
+        private bool _initialised;
+        private bool _initialising;
 
-        Device _device;
-        Sprite _sprite;
-        Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
-        Dictionary<Element, Texture> _imageCache = new Dictionary<Element, Texture>();
+        private Sprite _sprite;
+        private Sprite _progressBarSprite;
+        private readonly Dictionary<string, Font> _fontCache = new Dictionary<string, Font>();
+        private readonly Dictionary<Element, Texture> _imageCache = new Dictionary<Element, Texture>();
 
-        public Device Device => _device;
+        public Device Device { get; private set; }
 
-        public DXOverlayEngine()
+        public DxOverlayEngine()
         {
             Overlays = new List<IOverlay>();
         }
 
         private void EnsureInitiliased()
         {
-            Debug.Assert(_initialised);
+            Debug.Assert(condition: _initialised);
         }
 
         public bool Initialise(Device device)
@@ -42,10 +47,10 @@ namespace Overlay.Hook.DX9
 
             try
             {
+                Device = device;
 
-                _device = device;
-
-                _sprite = ToDispose(new Sprite(_device));
+                _sprite = ToDispose(new Sprite(Device));
+                _progressBarSprite = ToDispose(new Sprite(Device));
 
                 // Initialise any resources required for overlay elements
                 IntialiseElementResources();
@@ -88,10 +93,15 @@ namespace Overlay.Hook.DX9
         /// <summary>
         /// Draw the overlay(s)
         /// </summary>
-        public void Draw()
+        public void Draw(int progressSize)
         {
             EnsureInitiliased();
+            DrawProgresBar(progressSize);
+            DrawTextElements();
+        }
 
+        private void DrawTextElements()
+        {
             Begin();
 
             foreach (var overlay in Overlays)
@@ -107,19 +117,108 @@ namespace Overlay.Hook.DX9
                     if (textElement != null)
                     {
                         var font = GetFontForTextElement(textElement);
-                        if (font != null && !String.IsNullOrEmpty(textElement.Text))
-                            font.DrawText(_sprite, textElement.Text, textElement.Location.X, textElement.Location.Y, new SharpDX.ColorBGRA(textElement.Color.R, textElement.Color.G, textElement.Color.B, textElement.Color.A));
+         
+                        if (font != null && !string.IsNullOrEmpty(textElement.Text))
+                            font.DrawText(_sprite, textElement.Text, textElement.Location.X, textElement.Location.Y,
+                                new ColorBGRA(textElement.Color.R, textElement.Color.G, textElement.Color.B,
+                                    textElement.Color.A));
                     }
                     else if (imageElement != null)
                     {
                         var image = GetImageForImageElement(imageElement);
                         if (image != null)
-                            _sprite.Draw(image, new SharpDX.ColorBGRA(imageElement.Tint.R, imageElement.Tint.G, imageElement.Tint.B, imageElement.Tint.A), null, null, new Vector3(imageElement.Location.X, imageElement.Location.Y, 0));
+                            _sprite.Draw(image,
+                                new ColorBGRA(imageElement.Tint.R, imageElement.Tint.G, imageElement.Tint.B,
+                                    imageElement.Tint.A), null, null,
+                                new Vector3(imageElement.Location.X, imageElement.Location.Y, 0));
                     }
                 }
             }
 
             End();
+        }
+
+        private void DrawProgresBar(int progressSize)
+        {
+            _progressBarSprite.Begin(SpriteFlags.AlphaBlend);
+
+            var backgroundProgressBarTexture = Texture.FromStream(Device,
+                GetImage(Brushes.White).ToStream(ImageFormat.Bmp), 100, 16, 0,
+                Usage.None,
+                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
+
+            
+            var foregrundProgressBarTexture = Texture.FromStream(Device,
+                GetImage(Brushes.CornflowerBlue).ToStream(ImageFormat.Bmp), progressSize, 16, 0,
+                Usage.None,
+                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
+
+            var color = new ColorBGRA(0xffffffff);
+            var pos = new Vector3(5, 5, 0);
+
+            _progressBarSprite.Draw(backgroundProgressBarTexture, color, null, null, pos);
+
+            if (progressSize > 0)
+                _progressBarSprite.Draw(foregrundProgressBarTexture, color, null, null, pos);
+
+            _progressBarSprite.End();
+        }
+
+        private static Image GetImage(Brush color)
+        {
+            Image resultImage = new Bitmap(1440, 90, PixelFormat.Format24bppRgb);
+
+            using (var grp = Graphics.FromImage(resultImage))
+            {
+                grp.FillRectangle(
+                    color, 0, 0, resultImage.Width, resultImage.Height);
+            }
+
+            return resultImage;
+        }
+
+        private void ResizeImage(Image img)
+        {
+            var imageSize = img.Size;
+
+            // Calculate scale to get correct image size
+            var transform = Matrix.AffineTransformation2D(1f, 0f, Vector2.Zero);
+            // Calculate width scale
+            if (imageSize.Width <= 128)
+            {
+                transform.M11 = (float) imageSize.Width / 128f; // scale x
+            }
+            else if (imageSize.Width <= 256)
+            {
+                transform.M11 = (float) imageSize.Width / 256f; // scale x
+            }
+            else if (imageSize.Width <= 512)
+            {
+                transform.M11 = (float) imageSize.Width / 512f; // scale x
+            }
+            else if (imageSize.Width <= 1024)
+            {
+                transform.M11 = (float) imageSize.Width / 1024f; // scale x
+            }
+            // Calculate height scale
+            if (imageSize.Height <= 128)
+            {
+                transform.M22 = (float) imageSize.Height / 128f; // scale y
+            }
+            else if (imageSize.Height <= 256)
+            {
+                transform.M22 = (float) imageSize.Height / 256f; // scale y
+            }
+            else if (imageSize.Height <= 512)
+            {
+                transform.M22 = (float) imageSize.Height / 512f; // scale y
+            }
+            else if (imageSize.Height <= 1024)
+            {
+                transform.M22 = (float) imageSize.Height / 1024f; // scale y
+            }
+
+            _progressBarSprite.Transform = transform;
         }
 
         private void End()
@@ -136,42 +235,45 @@ namespace Overlay.Hook.DX9
             {
                 foreach (var item in _fontCache)
                     item.Value.OnLostDevice();
-                
-                if (_sprite != null)
-                    _sprite.OnLostDevice();
+
+                _sprite?.OnLostDevice();
             }
-            catch { }
+            catch
+            {
+            }
         }
 
-        Font GetFontForTextElement(TextElement element)
+        private Font GetFontForTextElement(TextElement element)
         {
-            Font result = null;
+            var fontKey = string.Format("{0}{1}{2}", element.Font.Name, element.Font.Size, element.Font.Style,
+                element.AntiAliased);
 
-            var fontKey = String.Format("{0}{1}{2}", element.Font.Name, element.Font.Size, element.Font.Style, element.AntiAliased);
-
-            if (!_fontCache.TryGetValue(fontKey, out result))
+            if (!_fontCache.TryGetValue(fontKey, out Font result))
             {
-                result = ToDispose(new Font(_device, new FontDescription { 
+                result = ToDispose(new Font(Device, new FontDescription
+                {
                     FaceName = element.Font.Name,
-                    Italic = (element.Font.Style & System.Drawing.FontStyle.Italic) == System.Drawing.FontStyle.Italic,
+                    Italic = (element.Font.Style & FontStyle.Italic) == FontStyle.Italic,
                     Quality = (element.AntiAliased ? FontQuality.Antialiased : FontQuality.Default),
-                    Weight = ((element.Font.Style & System.Drawing.FontStyle.Bold) == System.Drawing.FontStyle.Bold) ? FontWeight.Bold : FontWeight.Normal,
-                    Height = (int)element.Font.SizeInPoints
+                    Weight = ((element.Font.Style & FontStyle.Bold) == FontStyle.Bold)
+                        ? FontWeight.Bold
+                        : FontWeight.Normal,
+                    Height = (int) element.Font.SizeInPoints
                 }));
                 _fontCache[fontKey] = result;
             }
             return result;
         }
 
-        Texture GetImageForImageElement(ImageElement element)
+        private Texture GetImageForImageElement(ImageElement element)
         {
             Texture result = null;
 
-            if (!String.IsNullOrEmpty(element.Filename))
+            if (!string.IsNullOrEmpty(element.Filename))
             {
                 if (!_imageCache.TryGetValue(element, out result))
                 {
-                    result = ToDispose(SharpDX.Direct3D9.Texture.FromFile(_device, element.Filename));
+                    result = ToDispose(Texture.FromFile(Device, element.Filename));
 
                     _imageCache[element] = result;
                 }
@@ -187,15 +289,13 @@ namespace Overlay.Hook.DX9
         {
             if (true)
             {
-                _device = null;
+                Device = null;
             }
         }
 
-        void SafeDispose(DisposeBase disposableObj)
+        private void SafeDispose(IDisposable disposableObj)
         {
-            if (disposableObj != null)
-                disposableObj.Dispose();
+            disposableObj?.Dispose();
         }
-
     }
 }

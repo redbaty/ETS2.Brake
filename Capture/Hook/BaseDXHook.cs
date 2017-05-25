@@ -16,11 +16,11 @@ using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace Overlay.Hook
 {
-    public abstract class BaseDXHook: Component, IDXHook
+    public abstract class BaseDxHook: Component, IDXHook
     {
         private readonly ClientCaptureInterfaceEventProxy _interfaceEventProxy = new ClientCaptureInterfaceEventProxy();
 
-        protected BaseDXHook(OverlayInterface ssInterface)
+        protected BaseDxHook(OverlayInterface ssInterface)
         {
             Interface = ssInterface;
             Timer = new Stopwatch();
@@ -29,7 +29,7 @@ namespace Overlay.Hook
             Interface.DisplayText += _interfaceEventProxy.DisplayTextProxyHandler;
             _interfaceEventProxy.DisplayText += InterfaceEventProxy_DisplayText;
         }
-        ~BaseDXHook()
+        ~BaseDxHook()
         {
             Dispose(false);
         }
@@ -147,121 +147,6 @@ namespace Overlay.Hook
                 }
             }
         }
-
-        /// <summary>
-        /// Process the capture based on the requested format.
-        /// </summary>
-        /// <param name="width">image width</param>
-        /// <param name="height">image height</param>
-        /// <param name="pitch">data pitch (bytes per row)</param>
-        /// <param name="format">target format</param>
-        /// <param name="pBits">IntPtr to the image data</param>
-        /// <param name="request">The original requets</param>
-        protected void ProcessCapture(int width, int height, int pitch, PixelFormat format, IntPtr pBits, ScreenshotRequest request)
-        {
-            if (request == null)
-                return;
-
-            if (format == PixelFormat.Undefined)
-            {
-                DebugMessage("Unsupported render target format");
-                return;
-            }
-
-            // Copy the image data from the buffer
-            var size = height * pitch;
-            var data = new byte[size];
-            Marshal.Copy(pBits, data, 0, size);
-
-            // Prepare the response
-            Screenshot response;
-
-            if (request.Format == Overlay.Interface.ImageFormat.PixelData)
-            {
-                // Return the raw data
-                response = new Screenshot(request.RequestId, data)
-                {
-                    Format = request.Format,
-                    PixelFormat = format,
-                    Height = height,
-                    Width = width,
-                    Stride = pitch
-                };
-            }
-            else 
-            {
-                // Return an image
-                using (var bm = data.ToBitmap(width, height, pitch, format))
-                {
-                    var imgFormat = ImageFormat.Bmp;
-                    switch (request.Format)
-                    {
-                        case Overlay.Interface.ImageFormat.Jpeg:
-                            imgFormat = ImageFormat.Jpeg;
-                            break;
-                        case Overlay.Interface.ImageFormat.Png:
-                            imgFormat = ImageFormat.Png;
-                            break;
-                    }
-
-                    response = new Screenshot(request.RequestId, bm.ToByteArray(imgFormat))
-                    {
-                        Format = request.Format,
-                        Height = bm.Height,
-                        Width = bm.Width
-                    };
-                }
-            }
-
-            // Send the response
-            SendResponse(response);
-        }
-
-        private void SendResponse(Screenshot response)
-        {
-            Task.Factory.StartNew(() =>
-            {
-                try
-                {        
-                    LastCaptureTime = Timer.Elapsed;
-                }
-                catch (RemotingException)
-                {
-                    // Ignore remoting exceptions
-                    // .NET Remoting will throw an exception if the host application is unreachable
-                }
-                catch (Exception e)
-                {
-                    DebugMessage(e.ToString());
-                }
-            });
-        }
-
-
-
-        private ImageCodecInfo GetEncoder(ImageFormat format)
-        {
-            var codecs = ImageCodecInfo.GetImageDecoders();
-
-            return codecs.FirstOrDefault(codec => codec.FormatID == format.Guid);
-        }
-
-        private Bitmap BitmapFromBytes(byte[] bitmapData)
-        {
-            using (var ms = new MemoryStream(bitmapData))
-            {
-                return (Bitmap)Image.FromStream(ms);
-            }
-        }
-
-        private TimeSpan LastCaptureTime
-        {
-            get;
-            set;
-        }
-
-        protected bool CaptureThisFrame => ((Timer.Elapsed - LastCaptureTime) > CaptureDelay) || Request != null;
-        private TimeSpan CaptureDelay { get; set; }
 
         #region IDXHook Members
 

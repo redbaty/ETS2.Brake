@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Runtime.Remoting;
 using System.Security.Permissions;
+using Overlay.Hook.Common;
 
-namespace Overlay.Hook.Common
+namespace Overlay.Elements
 {
     [Serializable]
     public abstract class Element: MarshalByRefObject, IOverlayElement, IDisposable
