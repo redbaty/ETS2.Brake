@@ -149,6 +149,8 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Toolkit\Component.cs" />
+    <Compile Include="Toolkit\ComponentBase.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

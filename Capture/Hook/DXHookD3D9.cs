@@ -2,18 +2,16 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Overlay.Elements;
-using Overlay.Hook.Common;
 using Overlay.Hook.DX9;
 using Overlay.Interface;
 using SharpDX;
 using SharpDX.Direct3D9;
+using SharpDX.Mathematics.Interop;
 using Color = System.Drawing.Color;
 using Font = SharpDX.Direct3D9.Font;
 using Point = System.Drawing.Point;
-using Rectangle = SharpDX.Rectangle;
 
 //using SlimDX.Direct3D9;
 
@@ -181,16 +179,16 @@ namespace Overlay.Hook
             {
                 _resourcesInitialised = false;
 
-                RemoveAndDispose(ref _renderTargetCopy);
+                Utilities.Dispose(ref _renderTargetCopy);
                 _renderTargetCopyLocked = false;
 
-                RemoveAndDispose(ref _resolvedTarget);
-                RemoveAndDispose(ref _query);
+                Utilities.Dispose(ref _resolvedTarget);
+                Utilities.Dispose(ref _query);
                 _queryIssued = false;
 
-                RemoveAndDispose(ref _font);
+                Utilities.Dispose(ref _font);
 
-                RemoveAndDispose(ref _overlayEngine);
+                Utilities.Dispose(ref _overlayEngine);
             }
         }
 
@@ -303,7 +301,7 @@ namespace Overlay.Hook
                     {
                         // Cleanup if necessary
                         if (_overlayEngine != null)
-                            RemoveAndDispose(ref _overlayEngine);
+                            Utilities.Dispose(ref _overlayEngine);
 
                         _overlayEngine = ToDispose(new DxOverlayEngine());
                         var item = new TextElement(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
@@ -351,16 +349,16 @@ namespace Overlay.Hook
             }
         }
 
-        private DataRectangle LockRenderTarget(Surface renderTargetCopy, out Rectangle rect)
+        private DataRectangle LockRenderTarget(Surface renderTargetCopy, out RawRectangle rect)
         {
             if (_requestCopy.RegionToCapture.Height > 0 && _requestCopy.RegionToCapture.Width > 0)
             {
-                rect = new Rectangle(_requestCopy.RegionToCapture.Left, _requestCopy.RegionToCapture.Top,
+                rect = new RawRectangle(_requestCopy.RegionToCapture.Left, _requestCopy.RegionToCapture.Top,
                     _requestCopy.RegionToCapture.Width, _requestCopy.RegionToCapture.Height);
             }
             else
             {
-                rect = new Rectangle(0, 0, renderTargetCopy.Description.Width, renderTargetCopy.Description.Height);
+                rect = new RawRectangle(0, 0, renderTargetCopy.Description.Width, renderTargetCopy.Description.Height);
             }
             return renderTargetCopy.LockRectangle(rect, LockFlags.ReadOnly);
         }

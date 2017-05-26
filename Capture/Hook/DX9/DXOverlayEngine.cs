@@ -6,8 +6,10 @@ using System.Drawing.Imaging;
 using Overlay.Elements;
 using Overlay.Extensions;
 using Overlay.Hook.Common;
+using Overlay.Toolkit;
 using SharpDX;
 using SharpDX.Direct3D9;
+using SharpDX.Mathematics.Interop;
 using Font = SharpDX.Direct3D9.Font;
 
 namespace Overlay.Hook.DX9
@@ -32,6 +34,7 @@ namespace Overlay.Hook.DX9
 
         public DxOverlayEngine()
         {
+           
             Overlays = new List<IOverlay>();
             ForegroundImage = ToDispose(GetImage(Brushes.CornflowerBlue));
             BackgroundImage = ToDispose(GetImage(Brushes.White));
@@ -126,7 +129,7 @@ namespace Overlay.Hook.DX9
 
                         if (font != null && !string.IsNullOrEmpty(textElement.Text))
                             font.DrawText(_sprite, textElement.Text, textElement.Location.X, textElement.Location.Y,
-                                new ColorBGRA(textElement.Color.R, textElement.Color.G, textElement.Color.B,
+                                new RawColorBGRA(textElement.Color.R, textElement.Color.G, textElement.Color.B,
                                     textElement.Color.A));
                     }
                     else if (imageElement != null)
@@ -134,9 +137,9 @@ namespace Overlay.Hook.DX9
                         var image = GetImageForImageElement(imageElement);
                         if (image != null)
                             _sprite.Draw(image,
-                                new ColorBGRA(imageElement.Tint.R, imageElement.Tint.G, imageElement.Tint.B,
+                                new RawColorBGRA(imageElement.Tint.R, imageElement.Tint.G, imageElement.Tint.B,
                                     imageElement.Tint.A), null, null,
-                                new Vector3(imageElement.Location.X, imageElement.Location.Y, 0));
+                                new RawVector3(imageElement.Location.X, imageElement.Location.Y, 0));
                     }
                 }
             }
@@ -150,6 +153,7 @@ namespace Overlay.Hook.DX9
 
             var backgroundstream = BackgroundImage.ToStream(ImageFormat.Bmp);
             var foregroundstream = ForegroundImage.ToStream(ImageFormat.Bmp);
+
             var backgroundTexture = Texture.FromStream(Device, backgroundstream, 100, 16, 0,
                 Usage.None,
                 Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
@@ -159,8 +163,9 @@ namespace Overlay.Hook.DX9
                 Usage.None,
                 Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
 
-            var color = new ColorBGRA(0xffffffff);
-            var pos = new Vector3(5, 5, 0);
+            var color = new RawColorBGRA(){R = 255, A = 255, B = 255, G = 255};
+            var pos = new RawVector3
+                {X = 5, Y = 5, Z = 0};
 
             _progressBarSprite.Draw(backgroundTexture, color, null, null, pos);
 
@@ -215,7 +220,8 @@ namespace Overlay.Hook.DX9
 
             if (!_fontCache.TryGetValue(fontKey, out Font result))
             {
-                result = ToDispose(new Font(Device, new FontDescription
+                
+                result = DisposeCollector.Collect(new Font(Device, new FontDescription
                 {
                     FaceName = element.Font.Name,
                     Italic = (element.Font.Style & FontStyle.Italic) == FontStyle.Italic,
@@ -262,5 +268,7 @@ namespace Overlay.Hook.DX9
         {
             disposableObj?.Dispose();
         }
+
+        public string Name { get; set; }
     }
 }
