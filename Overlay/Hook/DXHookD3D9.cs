@@ -8,7 +8,6 @@ using Overlay.Hook.DX9;
 using Overlay.Interface;
 using SharpDX;
 using SharpDX.Direct3D9;
-using SharpDX.Mathematics.Interop;
 using Color = System.Drawing.Color;
 using Font = SharpDX.Direct3D9.Font;
 using Point = System.Drawing.Point;
@@ -33,9 +32,6 @@ namespace Overlay.Hook
         private bool _resourcesInitialised;
         private Query _query;
         private Font _font;
-        private bool _queryIssued;
-        private ScreenshotRequest _requestCopy;
-        private bool _renderTargetCopyLocked;
         private Surface _renderTargetCopy;
         private Surface _resolvedTarget;
 
@@ -43,7 +39,6 @@ namespace Overlay.Hook
 
         private List<IntPtr> _id3DDeviceFunctionAddresses = new List<IntPtr>();
 
-        //List<IntPtr> id3dDeviceExFunctionAddresses = new List<IntPtr>();
         private const int D3D9DeviceMethodCount = 119;
 
         private const int D3D9ExDeviceMethodCount = 15;
@@ -52,9 +47,7 @@ namespace Overlay.Hook
         public override void Hook()
         {
             DebugMessage("Hook: Begin");
-            // First we need to determine the function address for IDirect3DDevice9
             _id3DDeviceFunctionAddresses = new List<IntPtr>();
-            //id3dDeviceExFunctionAddresses = new List<IntPtr>();
             DebugMessage("Hook: Before device creation");
             using (var d3D = new Direct3D())
             {
@@ -180,11 +173,9 @@ namespace Overlay.Hook
                 _resourcesInitialised = false;
 
                 Utilities.Dispose(ref _renderTargetCopy);
-                _renderTargetCopyLocked = false;
 
                 Utilities.Dispose(ref _resolvedTarget);
                 Utilities.Dispose(ref _query);
-                _queryIssued = false;
 
                 Utilities.Dispose(ref _font);
 
@@ -304,18 +295,18 @@ namespace Overlay.Hook
                             Utilities.Dispose(ref _overlayEngine);
 
                         _overlayEngine = ToDispose(new DxOverlayEngine());
-                        var item = new TextElement(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                        var item = ToDispose(new TextElement(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
                         {
                             Location = new Point(110, 5),
                             Color = Color.White,
                             AntiAliased = true
-                        };
-                        var item2 = new Memory(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                        });
+                        var item2 = ToDispose(new Memory(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
                         {
                             Location = new Point(5, 20),
                             Text = "",
                             Color = Color.White,
-                        };
+                        });
 
 
                         // Create Overlay
@@ -347,20 +338,6 @@ namespace Overlay.Hook
             {
                 DebugMessage(e.ToString());
             }
-        }
-
-        private DataRectangle LockRenderTarget(Surface renderTargetCopy, out RawRectangle rect)
-        {
-            if (_requestCopy.RegionToCapture.Height > 0 && _requestCopy.RegionToCapture.Width > 0)
-            {
-                rect = new RawRectangle(_requestCopy.RegionToCapture.Left, _requestCopy.RegionToCapture.Top,
-                    _requestCopy.RegionToCapture.Width, _requestCopy.RegionToCapture.Height);
-            }
-            else
-            {
-                rect = new RawRectangle(0, 0, renderTargetCopy.Description.Width, renderTargetCopy.Description.Height);
-            }
-            return renderTargetCopy.LockRectangle(rect, LockFlags.ReadOnly);
         }
 
         private void CreateResources(Device device, int width, int height, Format format)
