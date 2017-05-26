@@ -101,7 +101,7 @@ namespace Overlay.Hook.DX9
         public void Draw(int progressSize)
         {
             EnsureInitiliased();
-           
+
             DrawTextElements();
             DrawProgresBar(progressSize);
         }
@@ -148,16 +148,16 @@ namespace Overlay.Hook.DX9
         {
             _progressBarSprite.Begin(SpriteFlags.AlphaBlend);
 
-            var backgroundTexture = ToDispose(Texture.FromStream(Device,
-                BackgroundImage.ToStream(ImageFormat.Bmp), 100, 16, 0,
+            var backgroundstream = BackgroundImage.ToStream(ImageFormat.Bmp);
+            var foregroundstream = ForegroundImage.ToStream(ImageFormat.Bmp);
+            var backgroundTexture = Texture.FromStream(Device, backgroundstream, 100, 16, 0,
                 Usage.None,
-                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0));
+                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
 
-
-            var foregroundTexture = ToDispose(Texture.FromStream(Device, ForegroundImage.ToStream(ImageFormat.Bmp),
+            var foregroundTexture = Texture.FromStream(Device, foregroundstream,
                 progressSize, 16, 0,
                 Usage.None,
-                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0));
+                Format.A8B8G8R8, Pool.Default, Filter.Default, Filter.Default, 0);
 
             var color = new ColorBGRA(0xffffffff);
             var pos = new Vector3(5, 5, 0);
@@ -168,6 +168,10 @@ namespace Overlay.Hook.DX9
                 _progressBarSprite.Draw(foregroundTexture, color, null, null, pos);
 
             _progressBarSprite.End();
+            backgroundstream.Dispose();
+            foregroundstream.Dispose();
+            backgroundTexture.Dispose();
+            foregroundTexture.Dispose();
         }
 
         private static Image GetImage(Brush color)
@@ -207,8 +211,7 @@ namespace Overlay.Hook.DX9
 
         private Font GetFontForTextElement(TextElement element)
         {
-            var fontKey = string.Format("{0}{1}{2}", element.Font.Name, element.Font.Size, element.Font.Style,
-                element.AntiAliased);
+            var fontKey = $"{element.Font.Name}{element.Font.Size}{element.Font.Style}";
 
             if (!_fontCache.TryGetValue(fontKey, out Font result))
             {
