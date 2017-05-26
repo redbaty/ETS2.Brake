@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -87,6 +88,7 @@ namespace ETS2.Brake
         private static void Main()
         {
             Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
+            Console.WriteLine($"Version: {Assembly.GetEntryAssembly().GetName().Version}", Color.LimeGreen);
 
             if (!Settings.Load("config.json"))
             {
