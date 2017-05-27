@@ -102,9 +102,6 @@
     <Reference Include="Semver, Version=2.0.4.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Semver.2.0.4\lib\net452\Semver.dll</HintPath>
     </Reference>
-    <Reference Include="SharpDX, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.3.1.1\lib\net45\SharpDX.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -167,12 +164,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="web_hi_res_512.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Capture\Overlay.csproj">
-      <Project>{23178a3d-2ac0-419a-b1b6-59ca45191270}</Project>
-      <Name>Overlay</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5.2">
