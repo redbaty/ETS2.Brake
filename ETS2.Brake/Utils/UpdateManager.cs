@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using GitHubUpdate;
@@ -14,7 +15,7 @@ namespace ETS2.Brake.Utils
             {
                 while (true)
                 {
-                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    var assembly = Assembly.GetExecutingAssembly();
                     var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
 
                     var checker =
@@ -24,9 +25,7 @@ namespace ETS2.Brake.Utils
                     var update = await checker.CheckUpdate();
 
                     if (update != UpdateType.None)
-                    {
                         Report.Info("There's an update available");
-                    }
 
                     Thread.Sleep(new TimeSpan(0, 1, 0));
                 }

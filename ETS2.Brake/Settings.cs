@@ -11,30 +11,31 @@ namespace ETS2.Brake
         public decimal CurrentIncreaseRatio { get; set; }
 
         /// <summary>
-        /// The time between increasing inside the increasing loop.
+        ///     The time between increasing inside the increasing loop.
         /// </summary>
         public TimeSpan IncreaseDelay { get; set; } = new TimeSpan(0, 0, 0, 0, 50);
 
         /// <summary>
-        /// The base increasing value
-        /// </summary>
-        public int StartIncreaseRatio { get; set; } = 150;
-
-        /// <summary>
-        /// Set if increasing the increase ratio is enabled
+        ///     Set if increasing the increase ratio is enabled
         /// </summary>
         public bool IsIncreaseRatioEnabled { get; set; } = true;
 
         /// <summary>
-        /// The time it takes to reset the increase value back to it's base after releasing the 'S' key.
+        ///     The time it takes to reset the increase value back to it's base after releasing the 'S' key.
         /// </summary>
         public TimeSpan ResetIncreaseRatioTimeSpan { get; set; } = new TimeSpan(0, 0, 0, 0, 500);
 
-        public bool Save(string path)
+        /// <summary>
+        ///     The base increasing value
+        /// </summary>
+        public int StartIncreaseRatio { get; set; } = 150;
+
+        public bool Load(string path)
         {
             try
             {
-                File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
+                var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(path));
+                Clone(settings);
                 return true;
             }
             catch
@@ -43,12 +44,11 @@ namespace ETS2.Brake
             }
         }
 
-        public bool Load(string path)
+        public bool Save(string path)
         {
             try
             {
-                var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(path));
-                Clone(settings);
+                File.WriteAllText(path, JsonConvert.SerializeObject(this, Formatting.Indented));
                 return true;
             }
             catch
@@ -66,7 +66,6 @@ namespace ETS2.Brake
                 BindingFlags.NonPublic | BindingFlags.Instance);
 
             foreach (var fi in fieldsOfClass)
-            {
                 try
                 {
                     fi.SetValue(this, fi.GetValue(baseClassInstance));
@@ -74,7 +73,6 @@ namespace ETS2.Brake
                 catch
                 {
                 }
-            }
         }
     }
 }

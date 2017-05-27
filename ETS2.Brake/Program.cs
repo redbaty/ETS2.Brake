@@ -19,6 +19,44 @@ namespace ETS2.Brake
 {
     internal static class Program
     {
+        private static decimal _currentBreakAmount;
+        private static CancellationTokenSource _increaseLoopResetToken = new CancellationTokenSource();
+        private static CancellationTokenSource _increaseRatioResetToken = new CancellationTokenSource();
+        private static bool _isRunning;
+        private static OverlayProcess _overlayProcess;
+
+        private static readonly Settings Settings = new Settings();
+
+        private static decimal CurrentBreakAmount
+        {
+            get => _currentBreakAmount;
+            set
+            {
+                if (value > JoystickManager.MaxValue)
+                    value = JoystickManager.MaxValue;
+
+                _currentBreakAmount = value;
+                var percentageValue = value / JoystickManager.MaxValue * 100;
+                JoystickManager.SetValue(ByPercentage((int) percentageValue));
+
+                _overlayProcess?.OverlayInterface.SetProgress((int) percentageValue);
+                _overlayProcess?.OverlayInterface.SetText($"{percentageValue / 100:0%}");
+            }
+        }
+
+        private static bool IsIncreaseLoopRunning
+        {
+            set
+            {
+                _increaseLoopResetToken = new CancellationTokenSource();
+
+                if (value)
+                    Task.Factory.StartNew(IncreaseLoop, _increaseLoopResetToken.Token);
+                else
+                    _increaseLoopResetToken.Cancel();
+            }
+        }
+
         private static bool IsRunning
         {
             get => _isRunning;
@@ -41,47 +79,120 @@ namespace ETS2.Brake
             }
         }
 
-        private static bool IsIncreaseLoopRunning
+        private static void AttachProcess(string processname)
         {
-            set
-            {
-                _increaseLoopResetToken = new CancellationTokenSource();
+            var exeName = Path.GetFileNameWithoutExtension(processname);
 
-                if (value)
-                    Task.Factory.StartNew(IncreaseLoop, _increaseLoopResetToken.Token);
+            var processes = Process.GetProcessesByName(exeName);
+            foreach (var process in processes)
+            {
+                if (process.MainWindowHandle == IntPtr.Zero)
+                    continue;
+
+                if (HookManager.IsHooked(process.Id))
+                    continue;
+
+                var cc = new OverlayConfig
+                {
+                    Direct3DVersion = Direct3DVersion.Unknown,
+                    ShowOverlay = true
+                };
+
+                var captureInterface = new OverlayInterface();
+                captureInterface.RemoteMessage += CaptureInterface_RemoteMessage;
+                _overlayProcess = new OverlayProcess(process, cc, captureInterface);
+                _overlayProcess.OverlayInterface.SetText("ETS.Brake loaded");
+                break;
+            }
+
+            if (_overlayProcess == null)
+                Report.Error("Could not find euro truck process. Hook is offline");
+            else
+                Report.Success("Hook is online");
+        }
+
+        private static int ByPercentage(int percentage) => Math.ByPercentage(percentage, JoystickManager.MaxValue);
+
+        private static void CaptureInterface_RemoteMessage(MessageReceivedEventArgs message)
+        {
+            switch (message.MessageType)
+            {
+                case MessageType.Debug:
+                    if (Debugger.IsAttached)
+                        Report.Debug(message.Message);
+                    break;
+                case MessageType.Information:
+                    Report.Info(message.Message);
+                    break;
+                case MessageType.Warning:
+                    Report.Warning(message.Message);
+                    break;
+                case MessageType.Error:
+                    Report.Error(message.Message);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args)
+        {
+            JoystickManager.Reset();
+            _overlayProcess.OverlayInterface.Disconnect();
+        }
+
+        private static void HotKeyManagerOnHotKeyPressedUp(object sender, KeyEventArgs keyEventArgs)
+        {
+            if (keyEventArgs.KeyCode == Keys.S)
+            {
+                IsIncreaseLoopRunning = false;
+                Task.Factory.StartNew(() =>
+                {
+                    Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
+                    if (!Keys.S.IsPressed())
+                        Settings.CurrentIncreaseRatio = Settings.StartIncreaseRatio;
+                }, _increaseRatioResetToken.Token);
+            }
+        }
+
+        /// <summary>
+        ///     Start <c>HotkeyManager</c>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="eventArgs"></param>
+        private static void HotKeyManagerOnLoaded(object sender, EventArgs eventArgs)
+        {
+            HotKeyManager.Add(Keys.W);
+            HotKeyManager.Add(Keys.A);
+            HotKeyManager.Add(Keys.S);
+            HotKeyManager.Add(Keys.D);
+            HotKeyManager.HotKeyPressedDown += OnKeyDown;
+            HotKeyManager.HotKeyPressedUp += HotKeyManagerOnHotKeyPressedUp;
+            Report.Success("Hotkeys loaded and applied");
+        }
+
+        /// <summary>
+        ///     The <c>CurrentBreakAmount</c> amount increase loop
+        /// </summary>
+        private static void IncreaseLoop()
+        {
+            while (true)
+            {
+                if (_increaseLoopResetToken.IsCancellationRequested)
+                    break;
+
+                if (Settings.IsIncreaseRatioEnabled)
+                {
+                    Settings.CurrentIncreaseRatio += 50;
+                    CurrentBreakAmount += Settings.CurrentIncreaseRatio;
+                }
                 else
-                    _increaseLoopResetToken.Cancel();
+                {
+                    CurrentBreakAmount++;
+                }
+
+                Thread.Sleep(Settings.IncreaseDelay);
             }
-        }
-
-        private static readonly Settings Settings = new Settings();
-        private static CancellationTokenSource _increaseLoopResetToken = new CancellationTokenSource();
-        private static CancellationTokenSource _increaseRatioResetToken = new CancellationTokenSource();
-        private static OverlayProcess _overlayProcess;
-
-        private static decimal _currentBreakAmount;
-        private static bool _isRunning;
-
-        private static decimal CurrentBreakAmount
-        {
-            get => _currentBreakAmount;
-            set
-            {
-                if (value > JoystickManager.MaxValue)
-                    value = JoystickManager.MaxValue;
-
-                _currentBreakAmount = value;
-                var percentageValue = value / JoystickManager.MaxValue * 100;
-                JoystickManager.SetValue(ByPercentage((int) percentageValue));
-
-                _overlayProcess?.OverlayInterface.SetProgress((int) percentageValue);
-                _overlayProcess?.OverlayInterface.SetText($"{percentageValue / 100:0%}");
-            }
-        }
-
-        private static int ByPercentage(int percentage)
-        {
-            return Math.ByPercentage(percentage, JoystickManager.MaxValue);
         }
 
         [STAThread]
@@ -139,9 +250,7 @@ namespace ETS2.Brake
             }
 
             if (Settings.IsIncreaseRatioEnabled)
-            {
                 Settings.ResetIncreaseRatioTimeSpan = new TimeSpan(0, 0, 0, 1, 0);
-            }
 
             while (true)
             {
@@ -166,110 +275,6 @@ namespace ETS2.Brake
                 }
 
                 Thread.Sleep(2000);
-            }
-        }
-
-        private static void HotKeyManagerOnLoaded(object sender, EventArgs eventArgs)
-        {
-            HotKeyManager.Add(Keys.W);
-            HotKeyManager.Add(Keys.A);
-            HotKeyManager.Add(Keys.S);
-            HotKeyManager.Add(Keys.D);
-            HotKeyManager.HotKeyPressedDown += OnKeyDown;
-            HotKeyManager.HotKeyPressedUp += HotKeyManagerOnHotKeyPressedUp;
-            Report.Success("Hotkeys loaded and applied");
-        }
-
-        private static void HotKeyManagerOnHotKeyPressedUp(object sender, KeyEventArgs keyEventArgs)
-        {
-            if (keyEventArgs.KeyCode == Keys.S)
-            {
-                IsIncreaseLoopRunning = false;
-                Task.Factory.StartNew(() =>
-                {
-                    Thread.Sleep(Settings.ResetIncreaseRatioTimeSpan);
-                    if (!Keys.S.IsPressed())
-                        Settings.CurrentIncreaseRatio = Settings.StartIncreaseRatio;
-                }, _increaseRatioResetToken.Token);
-            }
-        }
-
-        private static void AttachProcess(string processname)
-        {
-            var exeName = Path.GetFileNameWithoutExtension(processname);
-
-            var processes = Process.GetProcessesByName(exeName);
-            foreach (var process in processes)
-            {
-                if (process.MainWindowHandle == IntPtr.Zero)
-                    continue;
-
-                if (HookManager.IsHooked(process.Id))
-                    continue;
-
-                var cc = new OverlayConfig
-                {
-                    Direct3DVersion = Direct3DVersion.Unknown,
-                    ShowOverlay = true
-                };
-
-                var captureInterface = new OverlayInterface();
-                captureInterface.RemoteMessage += CaptureInterface_RemoteMessage;
-                _overlayProcess = new OverlayProcess(process, cc, captureInterface);
-                _overlayProcess.OverlayInterface.SetText("ETS.Brake loaded");
-                break;
-            }
-
-            if (_overlayProcess == null)
-                Report.Error("Could not find euro truck process. Hook is offline");
-            else
-                Report.Success("Hook is online");
-        }
-
-        private static void CaptureInterface_RemoteMessage(MessageReceivedEventArgs message)
-        {
-            switch (message.MessageType)
-            {
-                case MessageType.Debug:
-                    if (Debugger.IsAttached)
-                        Report.Debug(message.Message);
-                    break;
-                case MessageType.Information:
-                    Report.Info(message.Message);
-                    break;
-                case MessageType.Warning:
-                    Report.Warning(message.Message);
-                    break;
-                case MessageType.Error:
-                    Report.Error(message.Message);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private static void ConsoleManagerOnConsoleClosing(object o, EventArgs args)
-        {
-            JoystickManager.Reset();
-            _overlayProcess.OverlayInterface.Disconnect();
-        }
-
-        private static void IncreaseLoop()
-        {
-            while (true)
-            {
-                if (_increaseLoopResetToken.IsCancellationRequested)
-                    break;
-
-                if (Settings.IsIncreaseRatioEnabled)
-                {
-                    Settings.CurrentIncreaseRatio += 50;
-                    CurrentBreakAmount += Settings.CurrentIncreaseRatio;
-                }
-                else
-                    CurrentBreakAmount++;
-
-                Thread.Sleep(Settings.IncreaseDelay);
             }
         }
 

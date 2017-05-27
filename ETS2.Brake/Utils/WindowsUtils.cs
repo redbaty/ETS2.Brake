@@ -6,12 +6,6 @@ namespace ETS2.Brake.Utils
 {
     internal class WindowsUtils
     {
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll")]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
-
         public static string GetActiveWindowTitle()
         {
             const int nChars = 256;
@@ -22,5 +16,11 @@ namespace ETS2.Brake.Utils
                 return buff.ToString();
             return null;
         }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
     }
 }
