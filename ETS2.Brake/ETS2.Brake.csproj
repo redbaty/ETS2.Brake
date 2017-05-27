@@ -122,6 +122,7 @@
   <ItemGroup>
     <Compile Include="Managers\ConsoleManager.cs" />
     <Compile Include="Enum\CtrlType.cs" />
+    <Compile Include="Managers\HotKeyManager.MessageWindow.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utils\GlobalKeyboardHook.cs" />
     <Compile Include="Managers\HotKeyManager.cs" />
