@@ -1,5 +1,5 @@
 # ETS2.Brake
-A OMSI-like brake system for ETS.
+A OMSI-like brake system for ETS and ATS.
 
 # Installation
 * [First you'll need to install virtual joystick](http://vjoystick.sourceforge.net/site/index.php/download-a-install/download).
@@ -12,5 +12,6 @@ In the settings file (_config.json_) you'll find these properties:
 
 * **IncreaseDelay** : The time between increasing inside the increasing loop.
 * **StartIncreaseRatio** : The base increasing value.
-* **IsIncreaseRatioEnabled** : Set if increasing the increase ratio is enabled.
+* **IsIncreaseRatioEnabled** : Set if increasing the increase ratio is enabled. (A.K.A Exponential increase)
 * **ResetIncreaseRatioTimeSpan** : The time it takes to reset the increase value back to it's base after releasing the 'S' key.
+* **ShowMemoryUsage** : Enables/disables the current memory usage display.
