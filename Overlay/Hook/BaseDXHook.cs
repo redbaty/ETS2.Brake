@@ -11,44 +11,22 @@ using Overlay.Toolkit;
 
 namespace Overlay.Hook
 {
-    public abstract class BaseDxHook: Component, IDXHook
+    public abstract class BaseDxHook : Component, IDXHook
     {
-        private readonly ClientCaptureInterfaceEventProxy _interfaceEventProxy = new ClientCaptureInterfaceEventProxy();
-
         protected BaseDxHook(OverlayInterface ssInterface)
         {
             Interface = ssInterface;
-            Timer = new Stopwatch();
-            Timer.Start();
-
-            Interface.DisplayText += _interfaceEventProxy.DisplayTextProxyHandler;
-            _interfaceEventProxy.DisplayText += InterfaceEventProxy_DisplayText;
         }
+
         ~BaseDxHook()
         {
             Dispose(false);
         }
 
-        void InterfaceEventProxy_DisplayText(DisplayTextEventArgs args)
-        {
-            TextDisplay = new TextDisplay
-            {
-                Text = args.Text,
-                Duration = args.Duration
-            };
-        }
-
-        protected virtual void InterfaceEventProxy_ScreenshotRequested(ScreenshotRequest request)
-        {
-            
-            Request = request;
-        }
-
-        protected Stopwatch Timer { get; set; }
-
-        protected TextDisplay TextDisplay { get; set; }
+        
 
         int _processId;
+
         protected int ProcessId
         {
             get
@@ -62,12 +40,6 @@ namespace Overlay.Hook
         }
 
         protected virtual string HookName => "BaseDXHook";
-
-        protected void Frame()
-        {
-            if (TextDisplay != null && TextDisplay.Display) 
-                TextDisplay.Frame();
-        }
 
         protected void DebugMessage(string message)
         {
@@ -94,7 +66,8 @@ namespace Overlay.Hook
 
             var vTable = Marshal.ReadIntPtr(pointer);
             for (var i = startIndex; i < startIndex + numberOfMethods; i++)
-                vtblAddresses.Add(Marshal.ReadIntPtr(vTable, i * IntPtr.Size)); // using IntPtr.Size allows us to support both 32 and 64-bit processes
+                vtblAddresses.Add(Marshal.ReadIntPtr(vTable,
+                    i * IntPtr.Size)); // using IntPtr.Size allows us to support both 32 and 64-bit processes
 
             return vtblAddresses.ToArray();
         }
@@ -145,20 +118,9 @@ namespace Overlay.Hook
 
         #region IDXHook Members
 
-        public OverlayInterface Interface
-        {
-            get;
-            set;
-        }
+        public OverlayInterface Interface { get; set; }
 
         public OverlayConfig Config { get; set; }
-
-        private ScreenshotRequest _request;
-        public ScreenshotRequest Request
-        {
-            get => _request;
-            set => Interlocked.Exchange(ref _request, value);
-        }
 
         protected readonly List<Hook> Hooks = new List<Hook>();
         public abstract void Hook();
@@ -178,7 +140,9 @@ namespace Overlay.Hook
                 {
                     Cleanup();
                 }
-                catch { }
+                catch
+                {
+                }
 
                 try
                 {
@@ -202,13 +166,6 @@ namespace Overlay.Hook
 
                         Hooks.Clear();
                     }
-
-                    try
-                    {
-                        // Remove the event handlers
-                        Interface.DisplayText -= _interfaceEventProxy.DisplayTextProxyHandler;
-                    }
-                    catch (RemotingException) { } // Ignore remoting exceptions (host process may have been closed)
                 }
                 catch
                 {

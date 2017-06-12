@@ -34,7 +34,7 @@
         public ImageElement(System.Drawing.Bitmap bitmap, bool ownsImage = false)
         {
             Tint = System.Drawing.Color.White;
-            this.Bitmap = bitmap;
+            Bitmap = bitmap;
             _ownsBitmap = ownsImage;
             Scale = 1.0f;
         }

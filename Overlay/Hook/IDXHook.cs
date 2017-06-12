@@ -10,13 +10,8 @@ namespace Overlay.Hook
             get;
             set;
         }
-        OverlayConfig Config
-        {
-            get;
-            set;
-        }
 
-        ScreenshotRequest Request
+        OverlayConfig Config
         {
             get;
             set;

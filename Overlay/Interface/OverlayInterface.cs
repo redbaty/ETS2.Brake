@@ -7,12 +7,6 @@ namespace Overlay.Interface
     public delegate void MessageReceivedEvent(MessageReceivedEventArgs message);
 
     [Serializable]
-    public delegate void DisconnectedEvent();
-
-    [Serializable]
-    public delegate void DisplayTextEvent(DisplayTextEventArgs args);
-
-    [Serializable]
     public class OverlayInterface : MarshalByRefObject
     {
         /// <summary>
@@ -36,19 +30,7 @@ namespace Overlay.Interface
         /// </summary>
         public event MessageReceivedEvent RemoteMessage;
 
-        #endregion
-
-        #region Client-side Events
-
-        /// <summary>
-        /// Client event used to notify the hook to exit
-        /// </summary>
-        public event DisconnectedEvent Disconnected;
-
-        /// <summary>
-        /// Client event used to display a piece of text in-game
-        /// </summary>
-        public event DisplayTextEvent DisplayText;
+        public event EventHandler MemoryVisibilityChanged;
 
         #endregion
 
@@ -56,7 +38,7 @@ namespace Overlay.Interface
 
         #region Public Methods
 
-        #region Still image Capture
+        #region Text methods
 
         /// <summary>
         /// Sets the main textElement text
@@ -96,7 +78,7 @@ namespace Overlay.Interface
         /// </summary>
         public void Disconnect()
         {
-            SafeInvokeDisconnected();
+            
         }
 
         /// <summary>
@@ -113,27 +95,6 @@ namespace Overlay.Interface
         public void Message(MessageType messageType, string message)
         {
             SafeInvokeMessageRecevied(new MessageReceivedEventArgs(messageType, message));
-        }
-
-        /// <summary>
-        /// Display text in-game for the default duration of 5 seconds
-        /// </summary>
-        /// <param name="text"></param>
-        public void DisplayInGameText(string text)
-        {
-            DisplayInGameText(text, new TimeSpan(0, 0, 5));
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="duration"></param>
-        public void DisplayInGameText(string text, TimeSpan duration)
-        {
-            if (duration.TotalMilliseconds <= 0)
-                throw new ArgumentException("Duration must be larger than 0", nameof(duration));
-            SafeInvokeDisplayText(new DisplayTextEventArgs(text, duration));
         }
 
         #endregion
@@ -165,55 +126,6 @@ namespace Overlay.Interface
             }
         }
 
-
-        private void SafeInvokeDisconnected()
-        {
-            if (Disconnected == null)
-                return; //No Listeners
-
-            DisconnectedEvent listener = null;
-            var dels = Disconnected.GetInvocationList();
-
-            foreach (var del in dels)
-            {
-                try
-                {
-                    listener = (DisconnectedEvent) del;
-                    listener.Invoke();
-                }
-                catch (Exception)
-                {
-                    //Could not reach the destination, so remove it
-                    //from the list
-                    Disconnected -= listener;
-                }
-            }
-        }
-
-        private void SafeInvokeDisplayText(DisplayTextEventArgs displayTextEventArgs)
-        {
-            if (DisplayText == null)
-                return; //No Listeners
-
-            DisplayTextEvent listener = null;
-            var dels = DisplayText.GetInvocationList();
-
-            foreach (var del in dels)
-            {
-                try
-                {
-                    listener = (DisplayTextEvent) del;
-                    listener.Invoke(displayTextEventArgs);
-                }
-                catch (Exception)
-                {
-                    //Could not reach the destination, so remove it
-                    //from the list
-                    DisplayText -= listener;
-                }
-            }
-        }
-
         #endregion
 
         /// <summary>
@@ -221,6 +133,11 @@ namespace Overlay.Interface
         /// </summary>
         public void Ping()
         {
+        }
+
+        protected virtual void OnMemoryVisibilityChanged()
+        {
+            MemoryVisibilityChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

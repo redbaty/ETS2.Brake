@@ -19,12 +19,11 @@ namespace Overlay
         private IDXHook _directXHook;
         private readonly OverlayInterface _interface;
         private ManualResetEvent _runWait;
-        readonly ClientCaptureInterfaceEventProxy _clientEventProxy = new ClientCaptureInterfaceEventProxy();
-        readonly IpcServerChannel _clientServerChannel = null;
+        private readonly IpcServerChannel _clientServerChannel = null;
 
         public EntryPoint(
             RemoteHooking.IContext context,
-            String channelName,
+            string channelName,
             OverlayConfig config)
         {
             // Get reference to IPC to host application
@@ -52,7 +51,7 @@ namespace Overlay
 
         public void Run(
             RemoteHooking.IContext context,
-            String channelName,
+            string channelName,
             OverlayConfig config)
         {
             // When not using GAC there can be issues with remoting assemblies resolving correctly
@@ -73,17 +72,6 @@ namespace Overlay
                     return;
                 }
 
-                _interface.Disconnected += _clientEventProxy.DisconnectedProxyHandler;
-
-                // Important Note:
-                // accessing the _interface from within a _clientEventProxy event handler must always 
-                // be done on a different thread otherwise it will cause a deadlock
-
-                _clientEventProxy.Disconnected += () =>
-                {
-                    // We can now signal the exit of the Run method
-                    _runWait.Set();
-                };
 
                 // We start a thread here to periodically check if the host is still running
                 // If the host process stops then we will automatically uninstall the hooks
