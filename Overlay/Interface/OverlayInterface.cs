@@ -25,6 +25,8 @@ namespace Overlay.Interface
         /// </summary>
         public TextElement PercentageText { private get; set; }
 
+        public bool ShowMemoryUsage { get; set; }
+
         #region Events
 
         #region Server-side Events
@@ -70,6 +72,11 @@ namespace Overlay.Interface
             {
                 Message(MessageType.Warning, "Failed to set DirectX text");
             }
+        }
+
+        public void SetMemoryUsageVisibility(bool visible)
+        {
+            ShowMemoryUsage = visible;
         }
 
 

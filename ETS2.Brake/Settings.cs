@@ -21,6 +21,11 @@ namespace ETS2.Brake
         public bool IsIncreaseRatioEnabled { get; set; } = true;
 
         /// <summary>
+        /// Set if a memory usage text will appear below the progressbar
+        /// </summary>
+        public bool ShowMemoryUsage { get; set; }
+
+        /// <summary>
         ///     The time it takes to reset the increase value back to it's base after releasing the 'S' key.
         /// </summary>
         public TimeSpan ResetIncreaseRatioTimeSpan { get; set; } = new TimeSpan(0, 0, 0, 0, 500);

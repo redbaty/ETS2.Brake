@@ -8,9 +8,7 @@ using Overlay.Hook.DX9;
 using Overlay.Interface;
 using SharpDX;
 using SharpDX.Direct3D9;
-using Color = System.Drawing.Color;
 using Font = SharpDX.Direct3D9.Font;
-using Point = System.Drawing.Point;
 
 //using SlimDX.Direct3D9;
 
@@ -279,8 +277,6 @@ namespace Overlay.Hook
         /// <param name="hook"></param>
         private void DoCaptureRenderTarget(Device device, string hook)
         {
-            Frame();
-
             try
             {
                 if (Config.ShowOverlay)
@@ -295,32 +291,33 @@ namespace Overlay.Hook
                             Utilities.Dispose(ref _overlayEngine);
 
                         _overlayEngine = ToDispose(new DxOverlayEngine());
-                        var item = ToDispose(new TextElement(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
-                        {
-                            Location = new Point(110, 5),
-                            Color = Color.White,
-                            AntiAliased = true
-                        });
-                        var item2 = ToDispose(new Memory(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                        var overlay = new Common.Overlay();
+
+                        var progressPercentage = ToDispose(
+                            new TextElement(new System.Drawing.Font("Arial", 16, FontStyle.Bold))
+                            {
+                                Location = new Point(110, 5),
+                                Color = Color.White,
+                                AntiAliased = true
+                            });
+
+                        overlay.Elements.Add(progressPercentage);
+
+
+                        var memoryUsage = ToDispose(new Memory(new System.Drawing.Font("Arial", 16, FontStyle.Bold), Interface)
                         {
                             Location = new Point(5, 20),
-                            Text = "",
-                            Color = Color.White,
+                            Color = Color.White
                         });
 
+                        Interface.Message(MessageType.Debug, "Called");
+                        overlay.Elements.Add(memoryUsage);
 
                         // Create Overlay
-                        _overlayEngine.Overlays.Add(new Common.Overlay
-                        {
-                            Elements =
-                            {
-                                item,
-                                item2
-                            }
-                        });
+                        _overlayEngine.Overlays.Add(overlay);
 
                         _overlayEngine.Initialise(device);
-                        Interface.PercentageText = item;
+                        Interface.PercentageText = progressPercentage;
                         Interface.Message(MessageType.Information, "Overlay engine started");
                     }
                     // Draw Overlay(s)
