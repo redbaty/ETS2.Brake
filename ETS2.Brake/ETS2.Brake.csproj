@@ -11,7 +11,8 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <NuGetPackageImportStamp></NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -68,7 +69,6 @@
     <PackageReference Include="Semver" Version="2.0.4" />
     <PackageReference Include="SharpCompress" Version="0.19.2" />
     <PackageReference Include="Splat" Version="2.0.0" />
-    <PackageReference Include="squirrel.windows" Version="1.7.8" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -165,9 +165,9 @@
       <Output TaskParameter="Assemblies" ItemName="myAssemblyInfo" />
     </GetAssemblyIdentity>
     <Exec Command="nuget pack $(ProjectName).nuspec -Version %(myAssemblyInfo.Version) -Properties Configuration=Release -OutputDirectory $(OutDir)" />
-    <Exec Command="$(MSBuildProjectDirectory)\Squirrel\Squirrel.exe --releasify $(MSBuildProjectDirectory)\$(OutDir)$(ProjectName).$([System.String]::Copy('%(myAssemblyInfo.Version)').Remove(5)).nupkg" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent></PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
 </Project>
