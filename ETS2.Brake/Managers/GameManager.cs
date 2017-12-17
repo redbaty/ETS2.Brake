@@ -47,10 +47,10 @@ namespace ETS2.Brake.Managers
         /// <summary>
         ///     A list of supported games
         /// </summary>
-        private static Dictionary<string, string> SupportedGames { get; } = new Dictionary<string, string>
+        private static List<string> SupportedGames { get; } = new List<string>
         {
-            {"eurotrucks2", "Euro Truck Simulator 2"},
-            {"amtrucks", "American Truck Simulator"}
+            "eurotrucks2",
+            "amtrucks"
         };
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace ETS2.Brake.Managers
                 if (_isRunning)
                     try
                     {
-                        var item = Process.GetProcesses().First(p => SupportedGames.Any(y => y.Key == p.ProcessName));
+                        var item = Process.GetProcesses().First(p => SupportedGames.Any(y => y == p.ProcessName));
                         AttachProcess(item.ProcessName);
                     }
                     catch
@@ -143,7 +143,7 @@ namespace ETS2.Brake.Managers
         {
             while (true)
             {
-                var process = Process.GetProcesses().Where(p => SupportedGames.Any(y => y.Key == p.ProcessName))
+                var process = Process.GetProcesses().Where(p => SupportedGames.Any(y => y == p.ProcessName))
                     .ToList();
 
                 var item = process.Any() ? process.First() : null;
@@ -201,7 +201,8 @@ namespace ETS2.Brake.Managers
         /// <param name="keyEventArgs"></param>
         public static void OnKeyDown(object sender, KeyEventArgs keyEventArgs)
         {
-            if (SupportedGames.Any(p => p.Value == WindowsUtils.GetActiveWindowTitle()))
+            var process = WindowsUtils.GetActiveProcessFileName();
+            if (SupportedGames.Any(p => p.Contains(process.ProcessName)))
             {
                 if (Keys.S.IsPressed() && !Keys.W.IsPressed())
                 {
