@@ -201,8 +201,7 @@ namespace ETS2.Brake.Managers
         /// <param name="keyEventArgs"></param>
         public static void OnKeyDown(object sender, KeyEventArgs keyEventArgs)
         {
-            var process = WindowsUtils.GetActiveProcessFileName();
-            if (SupportedGames.Any(p => p.Contains(process.ProcessName)))
+            if (SupportedGames.Any(p => p.Contains(WindowsUtils.GetActiveProcessFileName().ProcessName)))
             {
                 if (Keys.S.IsPressed() && !Keys.W.IsPressed())
                 {
