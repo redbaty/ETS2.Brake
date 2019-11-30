@@ -33,13 +33,14 @@ namespace ETS2.Brake
             HotKeyManager.HotKeyPressedUp += GameManager.OnKeyUp;
             Report.Success("Hotkeys loaded and applied");
         }
-
-
+        
         [STAThread]
         private static void Main()
         {
+            var entryAssembly = Assembly.GetEntryAssembly();
+
             Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
-            Console.WriteLine($"Version: {Assembly.GetEntryAssembly().GetName().Version}", Color.LimeGreen);
+            Console.WriteLine($"Version: {entryAssembly?.GetName().Version}", Color.LimeGreen);
 
             if (!Settings.Load("config.json"))
             {

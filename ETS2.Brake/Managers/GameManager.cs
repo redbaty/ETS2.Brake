@@ -88,7 +88,7 @@ namespace ETS2.Brake.Managers
                         var item = Process.GetProcesses().First(p => SupportedGames.Any(y => y == p.ProcessName));
                         AttachProcess(item.ProcessName);
                     }
-                    catch
+                    catch(Exception ex)
                     {
                         Report.Error("Could not hook the overlay to the game.");
                     }
