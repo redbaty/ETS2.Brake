@@ -39,7 +39,7 @@ namespace ETS2.Brake
         private static void Main()
         {
             Console.WriteAscii("ETS2 Brake Sys", Color.MediumSpringGreen);
-            Console.WriteLine($"Version: {Assembly.GetEntryAssembly().GetName().Version}", Color.LimeGreen);
+            Console.WriteLine($"Version: {Assembly.GetEntryAssembly()?.GetName().Version}", Color.LimeGreen);
 
             if (!Settings.Load("config.json"))
             {
