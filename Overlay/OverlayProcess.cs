@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.Remoting;
 using System.Threading;
 using EasyHook;
@@ -51,18 +52,20 @@ namespace Overlay
 
             try
             {
+                var libPath = typeof(OverlayInterface).Assembly.Location;
+
                 RemoteHooking.Inject(
                     process.Id,
                     InjectionOptions.Default,
-                    typeof(OverlayInterface).Assembly.Location,
-                    typeof(OverlayInterface).Assembly.Location,
+                    libPath,
+                    libPath,
                     _channelName,
                     config
                 );
             }
             catch (Exception e)
             {
-                throw new InjectionFailedException(e);
+                 throw new InjectionFailedException(e);
             }
 
             HookManager.AddHookedProcess(process.Id);
