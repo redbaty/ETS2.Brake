@@ -5,14 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="EasyHook" Version="2.7.6270" />
-    <PackageReference Include="SharpDX" Version="4.0.1" />
-    <PackageReference Include="SharpDX.D3DCompiler" Version="4.0.1" />
-    <PackageReference Include="SharpDX.Direct3D10" Version="4.0.1" />
-    <PackageReference Include="SharpDX.Direct3D11" Version="4.0.1" />
-    <PackageReference Include="SharpDX.Direct3D11.Effects" Version="4.0.1" />
-    <PackageReference Include="SharpDX.Direct3D9" Version="4.0.1" />
-    <PackageReference Include="SharpDX.DXGI" Version="4.0.1" />
+    <PackageReference Include="EasyHook" Version="2.7.7097" />
+    <PackageReference Include="SharpDX" Version="4.2.0" />
+    <PackageReference Include="SharpDX.D3DCompiler" Version="4.2.0" />
+    <PackageReference Include="SharpDX.Direct3D10" Version="4.2.0" />
+    <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
+    <PackageReference Include="SharpDX.Direct3D11.Effects" Version="4.2.0" />
+    <PackageReference Include="SharpDX.Direct3D9" Version="4.2.0" />
+    <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
   </ItemGroup>
 
   <ItemGroup>

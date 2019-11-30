@@ -2,21 +2,25 @@
   <PropertyGroup>
     <TargetFramework>net461</TargetFramework>
     <OutputType>Exe</OutputType>
+    <CurrentPlatform>x86</CurrentPlatform>
+    <CurrentPlatform Condition="'$(PROCESSOR_ARCHITECTURE)'=='AMD64' or '$(PROCESSOR_ARCHITEW6432)'=='AMD64'">x64</CurrentPlatform>
+    <CurrentPlatform Condition="'$(Platform)'=='AnyCPU'">x86</CurrentPlatform>
   </PropertyGroup>
+  
 
   <ItemGroup>
-    <PackageReference Include="Colorful.Console" Version="1.2.1" />
-    <PackageReference Include="DeltaCompressionDotNet" Version="1.1.0" />
-    <PackageReference Include="EasyHook" Version="2.7.6270" />
+    <PackageReference Include="Colorful.Console" Version="1.2.9" />
+    <PackageReference Include="DeltaCompressionDotNet" Version="2.0.0" />
+    <PackageReference Include="EasyHook" Version="2.7.7097" />
     <PackageReference Include="GitHubUpdate" Version="1.2.0.0" />
     <PackageReference Include="GlobalHotKey" Version="1.1.0" />
-    <PackageReference Include="Mono.Cecil" Version="0.9.6.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="Octokit" Version="0.28.0" />
+    <PackageReference Include="Mono.Cecil" Version="0.11.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Octokit" Version="0.36.0" />
     <PackageReference Include="Open.WinKeyboardHook" Version="1.0.14" />
-    <PackageReference Include="Semver" Version="2.0.4" />
-    <PackageReference Include="SharpCompress" Version="0.19.2" />
-    <PackageReference Include="Splat" Version="2.0.0" />
+    <PackageReference Include="Semver" Version="2.0.5" />
+    <PackageReference Include="SharpCompress" Version="0.24.0" />
+    <PackageReference Include="Splat" Version="9.2.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,48 +35,15 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-
     <Reference Include="WindowsBase" />
   </ItemGroup>
-
-
-  <Choose>
-    <When Condition="'$(Platform)'=='x86'">
-      <ItemGroup>
-        <Reference Include="vJoyInterfaceWrap">
-          <HintPath>libs\x86\vJoyInterfaceWrap.dll</HintPath>
-        </Reference>
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <Reference Include="vJoyInterfaceWrap">
-          <HintPath>libs\x64\vJoyInterfaceWrap.dll</HintPath>
-        </Reference>
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
   
   <ItemGroup>
-    <Content Include="EasyHook32.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="EasyHook32Svc.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="EasyHook64.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="EasyHook64Svc.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="EasyLoad32.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="EasyLoad64.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="web_hi_res_512.ico" />
+    <Reference Include="vJoyInterfaceWrap">
+      <SpecificVersion>false</SpecificVersion>
+      <HintPath>libs\$(CurrentPlatform)\vJoyInterfaceWrap.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -83,23 +54,15 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 
-  <Choose>
-    <When Condition="'$(Platform)'=='x86'">
-      <ItemGroup>
-        <ContentWithTargetPath Include="libs\x86\vJoyInterface.dll">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-          <TargetPath>vJoyInterface.dll</TargetPath>
-        </ContentWithTargetPath>
-      </ItemGroup>
-    </When>
-    <Otherwise>
-      <ItemGroup>
-        <ContentWithTargetPath Include="libs\x64\vJoyInterface.dll">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-          <TargetPath>vJoyInterface.dll</TargetPath>
-        </ContentWithTargetPath>
-      </ItemGroup>
-    </Otherwise>
-  </Choose>
+  <ItemGroup>
+    <ContentWithTargetPath Include="libs\$(CurrentPlatform)\vJoyInterface.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <TargetPath>vJoyInterface.dll</TargetPath>
+    </ContentWithTargetPath>
+    <ContentWithTargetPath Include="libs\$(CurrentPlatform)\vJoyInterfaceWrap.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <TargetPath>vJoyInterfaceWrap.dll</TargetPath>
+    </ContentWithTargetPath>
+  </ItemGroup>
   
 </Project>
