@@ -19,7 +19,7 @@
     <PackageReference Include="Octokit" Version="0.36.0" />
     <PackageReference Include="Open.WinKeyboardHook" Version="1.0.14" />
     <PackageReference Include="Semver" Version="2.0.5" />
-    <PackageReference Include="SharpCompress" Version="0.24.0" />
+    <PackageReference Include="SharpCompress" Version="0.29.0" />
     <PackageReference Include="Splat" Version="9.2.11" />
   </ItemGroup>
 
